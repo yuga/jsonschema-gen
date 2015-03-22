@@ -23,7 +23,7 @@ library
                        Data.JSON.Schema.Generator.Generic
                        Data.JSON.Schema.Generator.Types
 
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 && <4.8
                      , bytestring
                      , containers
                      , tagged
