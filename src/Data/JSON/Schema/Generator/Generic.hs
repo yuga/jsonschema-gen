@@ -1,9 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,9 +12,14 @@
 
 module Data.JSON.Schema.Generator.Generic where
 
+#if MIN_VERSION_base(4,8,0)
+#else
+import Control.Applicative (pure)
+import Data.Monoid (mappend, mempty)
+#endif
+
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
-import Data.Monoid (mappend)
 import Data.Proxy (Proxy(Proxy))
 import Data.Tagged (Tagged(Tagged, unTagged))
 import Data.Text (Text)
@@ -30,15 +35,6 @@ import qualified Data.Text as Text
 
 --------------------------------------------------------------------------------
 
-class JSONSchemaGen a where
-    jsonSchema :: Proxy a -> Schema
-
-gJSONSchema :: (Generic a, GJSONSchemaGen (Rep a)) => Proxy a -> Schema
-gJSONSchema = gJSONSchemaWithOptions defaultOptions
-
-gJSONSchemaWithOptions :: (Generic a, GJSONSchemaGen (Rep a)) => Options -> Proxy a -> Schema
-gJSONSchemaWithOptions opts p = gSchema opts (fmap from p)
-
 data Options = Options
     { baseUri :: String
     }
@@ -47,16 +43,16 @@ defaultOptions :: Options
 defaultOptions = Options { baseUri = "" }
 
 class GJSONSchemaGen f where
-    gSchema :: Options -> Proxy (f a) -> Schema
+    gToSchema :: Options -> Proxy (f a) -> Schema
 
 instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
-    gSchema opts pd = SCSchema
+    gToSchema opts pd = SCSchema
         { scId = Text.pack $ baseUri opts ++ moduleDatatypeName pd
         , scUsedSchema = "http://json-schema.org/draft-04/schema#"
         , scSimpleType = (simpleType opts . fmap unM1 $ pd)
             { scTitle = Text.pack $ moduleDatatypeName pd
             }
-        , scDefinitions = []
+        , scDefinitions = mempty
         }
 
 class GSCDatatype f where
@@ -134,7 +130,7 @@ class SumToEnum f where
     sumToEnum :: Proxy (f a) -> [SchemaChoice]
 
 instance (Constructor c) => SumToEnum (C1 c U1) where
-    sumToEnum _ = [SCChoiceEnum { scName = Text.pack $ conName (undefined :: C1 c U1 p) }]
+    sumToEnum _ = pure SCChoiceEnum { scName = Text.pack $ conName (undefined :: C1 c U1 p) }
 
 instance (SumToEnum a, SumToEnum b) => SumToEnum (a :+: b) where
     sumToEnum _ = sumToEnum a `mappend` sumToEnum b
@@ -147,7 +143,7 @@ class SumToArrayOrMap f where
 
 instance (Constructor c, IsRecord f isRecord, ConToArrayOrMap f isRecord)
       => SumToArrayOrMap (C1 c f) where
-    sumToArrayOrMap opts _ = return $ scTag { sctName = Text.pack . conName $ c }
+    sumToArrayOrMap opts _ = pure scTag { sctName = Text.pack . conName $ c }
       where
         scTag = (unTagged :: Tagged isRecord SchemaChoice -> SchemaChoice) . conToArrayOrMap opts $ (Proxy :: Proxy (f p))
         c = undefined :: C1 c f p
@@ -179,12 +175,12 @@ class RecordToPairs f where
     recordToPairs :: Options -> Bool -> Proxy (f a) -> [(Text, Schema)]
 
 instance RecordToPairs U1 where
-    recordToPairs _ _ _ = []
+    recordToPairs _ _ _ = mempty
 
 instance (Selector s, IsNullable a, ToJSONSchemaDef a) => RecordToPairs (S1 s a) where
     recordToPairs opts notMaybe _ 
-        | notMaybe && isNullable record = []
-        | otherwise                     = [(Text.pack . selName $ selector, toJSONSchemaDef opts record)]
+        | notMaybe && isNullable record = mempty
+        | otherwise                     = pure (Text.pack . selName $ selector, toJSONSchemaDef opts record)
       where
         record = Proxy :: Proxy (a p)
         selector = undefined :: S1 s a p
@@ -199,7 +195,7 @@ class ProductToList f where
     productToList :: Options -> Proxy (f a) -> [Schema]
 
 instance (IsNullable a, ToJSONSchemaDef a) => ProductToList (S1 s a) where
-    productToList opts _ = [(toJSONSchemaDef opts prod) {scNullable = isNullable prod} ]
+    productToList opts _ = pure (toJSONSchemaDef opts prod) {scNullable = isNullable prod}
       where
         prod = Proxy :: Proxy (a p)
 

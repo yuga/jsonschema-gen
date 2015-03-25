@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -6,9 +7,13 @@ module Data.JSON.Schema.Generator.Generate
     , convertWithOptions
     ) where
 
+#if MIN_VERSION_base(4,8,0)
+#else
 import Control.Applicative ((<*>))
+#endif
+
 import Control.Arrow (second)
-import Data.JSON.Schema.Generator.Types
+import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..))
 import Data.Text (Text)
 
 import qualified Data.Aeson as A
