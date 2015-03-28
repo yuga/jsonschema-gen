@@ -10,6 +10,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+#if __GLASGOW_HASKELL__ < 710
+{-# LANGUAGE OverlappingInstances #-}
+#endif
+
 module Data.JSON.Schema.Generator.Generic where
 
 #if MIN_VERSION_base(4,8,0)
@@ -69,6 +73,9 @@ class GSCSimpleType f where
     simpleType :: Options -> Proxy (f a) -> Schema
 
 -- one constructor that has no argument
+--instance (GSCSimpleTypeC (C1 c U1)) => GSCSimpleType (C1 c U1) where
+--    simpleType opts = simpleTypeC opts
+
 instance (Constructor c) => GSCSimpleType (C1 c U1) where
     simpleType _ _ = SCConst
         { scTitle = ""
@@ -80,8 +87,23 @@ instance (IsRecord f isRecord, GSCSimpleTypeS f isRecord) => GSCSimpleType (C1 c
     simpleType opts _ = (unTagged :: Tagged isRecord Schema -> Schema) . simpleTypeS opts $ (Proxy :: Proxy (f p))
 
 -- there are multiple constructors
+#if __GLASGOW_HASKELL__ >= 710
+instance {-# OVERLAPPABLE #-} (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
+    simpleType opts _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts $ (Proxy :: Proxy (f p))
+#else
 instance (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
     simpleType opts _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts $ (Proxy :: Proxy (f p))
+#endif
+
+class GSCSimpleTypeC f where
+    simpleTypeC :: Options -> Proxy (f a) -> Schema
+
+instance (Constructor c) => GSCSimpleTypeC (C1 c U1) where
+    simpleTypeC _ _ = SCConst
+        { scTitle = ""
+        , scDescription = Nothing
+        , scValue = Text.pack . conName $ (undefined :: C1 c U1 p)
+        }
 
 class GSCSimpleTypeS f isRecord where
     simpleTypeS :: Options -> Proxy (f a) -> Tagged isRecord Schema
@@ -210,15 +232,54 @@ instance (ProductToList a, ProductToList b) => ProductToList (a :*: b) where
 class ToJSONSchemaDef f where
     toJSONSchemaDef :: Options -> Proxy (f a) -> Schema
 
-instance (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toJSONSchemaDef' opts (Proxy :: Proxy a)
+#if __GLASGOW_HASKELL__ >= 710
+instance {-# OVERLAPPING #-} (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i (Maybe a)) where
+    toJSONSchemaDef opts _  = toJSONSchemaDef' opts (Proxy :: Proxy a)
 
+instance {-# OVERLAPPABLE #-} (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i a) where
+    toJSONSchemaDef opts _ = toJSONSchemaDef' opts (Proxy :: Proxy a)
+#else
 instance (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i (Maybe a)) where
     toJSONSchemaDef opts _  = toJSONSchemaDef' opts (Proxy :: Proxy a)
+
+instance (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i a) where
+    toJSONSchemaDef opts _ = toJSONSchemaDef' opts (Proxy :: Proxy a)
+#endif
 
 class ToJSONSchemaDef' a where
     toJSONSchemaDef' :: Options -> Proxy a -> Schema
 
+#if __GLASGOW_HASKELL__ >= 710
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' String where
+    toJSONSchemaDef' _ _ = scString
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Text where
+    toJSONSchemaDef' _ _ = scString
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' UTCTime where
+    toJSONSchemaDef' _ _ = scString { scFormat = Just "date-time" }
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Int where
+    toJSONSchemaDef' _ _ = scInteger
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Integer where
+    toJSONSchemaDef' _ _ = scInteger
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Float where
+    toJSONSchemaDef' _ _ = scNumber
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Double where
+    toJSONSchemaDef' _ _ = scNumber
+
+instance {-# OVERLAPPING #-} ToJSONSchemaDef' Bool where
+    toJSONSchemaDef' _ _ = scBoolean
+
+instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
+    toJSONSchemaDef' opts a = SCRef
+        { scReference = Text.pack $ baseUri opts ++ moduleDatatypeName (fmap from a)
+        , scNullable = False
+        }
+#else
 instance ToJSONSchemaDef' String where
     toJSONSchemaDef' _ _ = scString
 
@@ -248,15 +309,24 @@ instance (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
         { scReference = Text.pack $ baseUri opts ++ moduleDatatypeName (fmap from a)
         , scNullable = False
         }
+#endif
 
 class IsNullable f where
     isNullable :: Proxy (f a) -> Bool
 
+#if __GLASGOW_HASKELL__ >= 710
+instance {-# OVERLAPPING #-} IsNullable (K1 i (Maybe a)) where
+    isNullable _ = True
+
+instance {-# OVERLAPPABLE #-} IsNullable (K1 i a) where
+    isNullable _ = False
+#else
 instance IsNullable (K1 i (Maybe a)) where
     isNullable _ = True
 
 instance IsNullable (K1 i a) where
     isNullable _ = False
+#endif
 
 --------------------------------------------------------------------------------
 
