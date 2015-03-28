@@ -13,7 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 -- extra-source-files:  
 
-flag avoidAesonIssue
+flag safe-aeson
   description: To avoid the issue of prior to aeson-0.7.0.6, set this flag True.
   default: False
 
@@ -33,7 +33,7 @@ library
                      , unordered-containers
                      , vector
 
-  if flag(avoidAesonIssue)
+  if flag(safe-aeson)
     build-depends:
                        aeson >=0.7.0.6
                      , scientific >=0.3.2.0
@@ -49,4 +49,18 @@ library
 source-repository head
   type:                git
   location:            git://github.com/yuga/jsonschema-gen
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  other-modules:       Types
+  build-depends:       base >=4.6 && <4.9
+                     , aeson
+                     , bytestring
+                     , jsonschema-gen
+                     , tagged
+                     , text
+                     , transformers
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
 
