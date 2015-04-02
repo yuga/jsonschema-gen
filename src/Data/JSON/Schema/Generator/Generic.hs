@@ -24,6 +24,9 @@ import Data.Monoid (mappend, mempty)
 
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.Tagged (Tagged(Tagged, unTagged))
 import Data.Text (Text)
@@ -41,17 +44,24 @@ import qualified Data.Text as Text
 
 data Options = Options
     { baseUri :: String
+    , schemaIdSuffix :: String
+    , refSchemaMap :: Map String String
     }
+    deriving Show
 
 defaultOptions :: Options
-defaultOptions = Options { baseUri = "" }
+defaultOptions = Options
+    { baseUri = ""
+    , schemaIdSuffix = ""
+    , refSchemaMap = Map.empty
+    }
 
 class GJSONSchemaGen f where
     gToSchema :: Options -> Proxy (f a) -> Schema
 
 instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
-        { scId = Text.pack $ baseUri opts ++ moduleDatatypeName pd
+        { scId = Text.pack $ baseUri opts ++ moduleDatatypeName pd ++ schemaIdSuffix opts
         , scUsedSchema = "http://json-schema.org/draft-04/schema#"
         , scSimpleType = (simpleType opts . fmap unM1 $ pd)
             { scTitle = Text.pack $ moduleDatatypeName pd
@@ -202,7 +212,8 @@ instance RecordToPairs U1 where
 instance (Selector s, IsNullable a, ToJSONSchemaDef a) => RecordToPairs (S1 s a) where
     recordToPairs opts notMaybe _ 
         | notMaybe && isNullable record = mempty
-        | otherwise                     = pure (Text.pack . selName $ selector, toJSONSchemaDef opts record)
+        | otherwise                     = pure ( Text.pack . selName $ selector
+                                               , (toJSONSchemaDef opts record) { scNullable = isNullable record })
       where
         record = Proxy :: Proxy (a p)
         selector = undefined :: S1 s a p
@@ -276,9 +287,12 @@ instance {-# OVERLAPPING #-} ToJSONSchemaDef' Bool where
 
 instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
     toJSONSchemaDef' opts a = SCRef
-        { scReference = Text.pack $ baseUri opts ++ moduleDatatypeName (fmap from a)
+        { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
         , scNullable = False
         }
+      where
+        mdname = moduleDatatypeName (fmap from a)
+        defaultUri = baseUri opts ++ mdname ++ schemaIdSuffix opts
 #else
 instance ToJSONSchemaDef' String where
     toJSONSchemaDef' _ _ = scString
@@ -306,9 +320,12 @@ instance ToJSONSchemaDef' Bool where
 
 instance (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
     toJSONSchemaDef' opts a = SCRef
-        { scReference = Text.pack $ baseUri opts ++ moduleDatatypeName (fmap from a)
+        { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
         , scNullable = False
         }
+      where
+        mdname = moduleDatatypeName (fmap from a)
+        defaultUri = baseUri opts ++ mdname ++ schemaIdSuffix opts
 #endif
 
 class IsNullable f where
