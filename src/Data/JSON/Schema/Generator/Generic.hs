@@ -56,6 +56,16 @@ defaultOptions = Options
     , refSchemaMap = Map.empty
     }
 
+data Env = Env
+    { envModuleName   :: !String
+    , envDatatypeName :: !String
+    , envConName      :: !String
+    , envSelname      :: !String
+    }
+
+initEnv :: Env
+initEnv = Env "" "" "" ""
+
 class GJSONSchemaGen f where
     gToSchema :: Options -> Proxy (f a) -> Schema
 
@@ -63,73 +73,71 @@ instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
         { scId = Text.pack $ baseUri opts ++ moduleDatatypeName pd ++ schemaIdSuffix opts
         , scUsedSchema = "http://json-schema.org/draft-04/schema#"
-        , scSimpleType = (simpleType opts . fmap unM1 $ pd)
+        , scSimpleType = (simpleType opts env . fmap unM1 $ pd)
             { scTitle = Text.pack $ moduleDatatypeName pd
             }
         , scDefinitions = mempty
         }
+      where
+        env = initEnv { envModuleName = moduleName' pd
+                      , envDatatypeName = datatypeName' pd
+                      }
 
 class GSCDatatype f where
     moduleDatatypeName :: Proxy (f a) -> String
+    moduleName' :: Proxy (f a) -> String
+    datatypeName' :: Proxy (f a) -> String
 
 instance (Datatype d) => GSCDatatype (D1 d f) where
-    moduleDatatypeName _ = moduleName d ++ "." ++ datatypeName d
-      where
-        d = undefined :: D1 d f p
+    moduleDatatypeName d = moduleName' d ++ "." ++ datatypeName' d
+    moduleName' _ = moduleName (undefined :: D1 d f p)
+    datatypeName' _ = datatypeName (undefined :: D1 d f p)
 
 --------------------------------------------------------------------------------
 
 class GSCSimpleType f where
-    simpleType :: Options -> Proxy (f a) -> Schema
-
--- one constructor that has no argument
---instance (GSCSimpleTypeC (C1 c U1)) => GSCSimpleType (C1 c U1) where
---    simpleType opts = simpleTypeC opts
+    simpleType :: Options -> Env -> Proxy (f a) -> Schema
 
 instance (Constructor c) => GSCSimpleType (C1 c U1) where
-    simpleType _ _ = SCConst
-        { scTitle = ""
+    simpleType _ env _ = SCConst
+        { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ conname
         , scDescription = Nothing
-        , scValue = Text.pack . conName $ (undefined :: C1 c U1 p)
+        , scValue = Text.pack conname
         }
+      where
+        conname = conName (undefined :: C1 c U1 p)
 
-instance (IsRecord f isRecord, GSCSimpleTypeS f isRecord) => GSCSimpleType (C1 c f) where
-    simpleType opts _ = (unTagged :: Tagged isRecord Schema -> Schema) . simpleTypeS opts $ (Proxy :: Proxy (f p))
+instance (IsRecord f isRecord, GSCSimpleTypeS f isRecord, Constructor c) => GSCSimpleType (C1 c f) where
+    simpleType opts env _ = (unTagged :: Tagged isRecord Schema -> Schema) . simpleTypeS opts env' $ (Proxy :: Proxy (f p))
+      where
+        env' = env { envConName = conName (undefined :: C1 c f p) }
 
 -- there are multiple constructors
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPABLE #-} (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
-    simpleType opts _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts $ (Proxy :: Proxy (f p))
+    simpleType opts env _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts env $ (Proxy :: Proxy (f p))
 #else
 instance (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
-    simpleType opts _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts $ (Proxy :: Proxy (f p))
+    simpleType opts env _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts env $ (Proxy :: Proxy (f p))
 #endif
 
-class GSCSimpleTypeC f where
-    simpleTypeC :: Options -> Proxy (f a) -> Schema
-
-instance (Constructor c) => GSCSimpleTypeC (C1 c U1) where
-    simpleTypeC _ _ = SCConst
-        { scTitle = ""
-        , scDescription = Nothing
-        , scValue = Text.pack . conName $ (undefined :: C1 c U1 p)
-        }
-
 class GSCSimpleTypeS f isRecord where
-    simpleTypeS :: Options -> Proxy (f a) -> Tagged isRecord Schema
+    simpleTypeS :: Options -> Env -> Proxy (f a) -> Tagged isRecord Schema
 
+-- Record
 instance (RecordToPairs f) => GSCSimpleTypeS f True where
-    simpleTypeS opts _ = Tagged SCObject
-        { scTitle = ""
+    simpleTypeS opts env _ = Tagged SCObject
+        { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
         , scNullable = False
         , scProperties = recordToPairs opts False (Proxy :: Proxy (f p))
         , scRequired = map fst $ recordToPairs opts True (Proxy :: Proxy (f p))
         }
 
+-- Product
 instance (ProductToList f) => GSCSimpleTypeS f False where
-    simpleTypeS opts _ = Tagged SCArray
-        { scTitle = ""
+    simpleTypeS opts env _ = Tagged SCArray
+        { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
         , scNullable = False
         , scItems = productToList opts (Proxy :: Proxy (f p))
@@ -138,66 +146,73 @@ instance (ProductToList f) => GSCSimpleTypeS f False where
         }
 
 class GSCSimpleTypeM f allNullary  where
-    simpleTypeM :: Options -> Proxy (f a) -> Tagged allNullary Schema
+    simpleTypeM :: Options -> Env -> Proxy (f a) -> Tagged allNullary Schema
 
+-- allNullary
 instance (SumToEnum f) => GSCSimpleTypeM f True where
-    simpleTypeM _ _ = Tagged SCOneOf
-        { scTitle = ""
+    simpleTypeM _ env _ = Tagged SCOneOf
+        { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
-        , scNullable = False
-        , scChoices = sumToEnum (Proxy :: Proxy (f p))
+        , scChoices = sumToEnum env (Proxy :: Proxy (f p))
         }
 
+-- not allNullary
 instance (SumToArrayOrMap f) => GSCSimpleTypeM f False where
-    simpleTypeM opts _ = Tagged SCOneOf
-        { scTitle = ""
+    simpleTypeM opts env _ = Tagged SCOneOf
+        { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
-        , scNullable = False
-        , scChoices = sumToArrayOrMap opts (Proxy :: Proxy (f p))
+        , scChoices = sumToArrayOrMap opts env (Proxy :: Proxy (f p))
         }
 
 --------------------------------------------------------------------------------
 
 class SumToEnum f where
-    sumToEnum :: Proxy (f a) -> [SchemaChoice]
+    sumToEnum :: Env -> Proxy (f a) -> [SchemaChoice]
 
 instance (Constructor c) => SumToEnum (C1 c U1) where
-    sumToEnum _ = pure SCChoiceEnum { scName = Text.pack $ conName (undefined :: C1 c U1 p) }
+    sumToEnum env _ = pure SCChoiceEnum
+        { sctName = Text.pack $ conName (undefined :: C1 c U1 p)
+        , sctTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "."
+                              ++ conName (undefined :: C1 c U1 p)
+        }
 
 instance (SumToEnum a, SumToEnum b) => SumToEnum (a :+: b) where
-    sumToEnum _ = sumToEnum a `mappend` sumToEnum b
+    sumToEnum env _ = sumToEnum env a `mappend` sumToEnum env b
       where
         a = Proxy :: Proxy (a p)
         b = Proxy :: Proxy (b p)
 
 class SumToArrayOrMap f where
-    sumToArrayOrMap :: Options -> Proxy (f a) -> [SchemaChoice]
+    sumToArrayOrMap :: Options -> Env -> Proxy (f a) -> [SchemaChoice]
 
 instance (Constructor c, IsRecord f isRecord, ConToArrayOrMap f isRecord)
       => SumToArrayOrMap (C1 c f) where
-    sumToArrayOrMap opts _ = pure scTag { sctName = Text.pack . conName $ c }
+    sumToArrayOrMap opts env _ =
+        pure . (unTagged :: Tagged isRecord SchemaChoice -> SchemaChoice) . conToArrayOrMap opts env' $ (Proxy :: Proxy (f p))
       where
-        scTag = (unTagged :: Tagged isRecord SchemaChoice -> SchemaChoice) . conToArrayOrMap opts $ (Proxy :: Proxy (f p))
-        c = undefined :: C1 c f p
+        env' = env { envConName = conName (undefined :: C1 c f p) }
 
 instance (SumToArrayOrMap a, SumToArrayOrMap b) => SumToArrayOrMap (a :+: b) where
-    sumToArrayOrMap opts _ = sumToArrayOrMap opts a `mappend` sumToArrayOrMap opts b
+    sumToArrayOrMap opts env _ = sumToArrayOrMap opts env a `mappend` sumToArrayOrMap opts env b
       where
         a = Proxy :: Proxy (a p)
         b = Proxy :: Proxy (b p)
 
 class ConToArrayOrMap f isRecord where
-    conToArrayOrMap :: Options -> Proxy (f a) -> Tagged isRecord SchemaChoice
+    conToArrayOrMap :: Options -> Env -> Proxy (f a) -> Tagged isRecord SchemaChoice
 
 instance (RecordToPairs f) => ConToArrayOrMap f True where
-    conToArrayOrMap opts _ = Tagged SCChoiceMap
-        { sctName = ""
+    conToArrayOrMap opts env _ = Tagged SCChoiceMap
+        { sctName = Text.pack $ envConName env
+        , sctTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , sctMap = recordToPairs opts False (Proxy :: Proxy (f p))
+        , sctRequired = map fst $ recordToPairs opts True (Proxy :: Proxy (f p))
         }
 
 instance (RecordToPairs f) => ConToArrayOrMap f False where
-    conToArrayOrMap opts _ = Tagged SCChoiceArray
-        { sctName = ""
+    conToArrayOrMap opts env _ = Tagged SCChoiceArray
+        { sctName = Text.pack $ envConName env
+        , sctTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , sctArray = map snd $ recordToPairs opts False (Proxy :: Proxy (f p))
         }
 
@@ -211,10 +226,11 @@ instance RecordToPairs U1 where
 
 instance (Selector s, IsNullable a, ToJSONSchemaDef a) => RecordToPairs (S1 s a) where
     recordToPairs opts notMaybe _ 
-        | notMaybe && isNullable record = mempty
-        | otherwise                     = pure ( Text.pack . selName $ selector
-                                               , (toJSONSchemaDef opts record) { scNullable = isNullable record })
+        | isEmpty   = mempty
+        | otherwise = pure ( Text.pack . selName $ selector
+                           , (toJSONSchemaDef opts record) { scNullable = isNullable record })
       where
+        isEmpty = notMaybe && isNullable record
         record = Proxy :: Proxy (a p)
         selector = undefined :: S1 s a p
 

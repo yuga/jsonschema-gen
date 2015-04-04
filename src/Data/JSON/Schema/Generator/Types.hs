@@ -64,7 +64,6 @@ data Schema =
     | SCOneOf
         { scTitle       :: !Text
         , scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
         , scChoices     :: ![SchemaChoice]
         }
     | SCRef
@@ -76,15 +75,19 @@ data Schema =
 
 data SchemaChoice =
       SCChoiceEnum -- [*]; e.g. "test": {"enum": ["xxx", "yyy", "zzz"]}
-        { scName :: !Text
+        { sctName  :: !Text
+        , sctTitle :: !Text
         }
     | SCChoiceArray -- non record of [* -> .. -> *]; e.g. "test": [{"tag": "xxx", "contents": []},...] or "test": [{"xxx": [],},...]
         { sctName   :: !Text
+        , sctTitle  :: !Text
         , sctArray  :: ![Schema]
         }
     | SCChoiceMap -- record of [* -> .. -> *] e.g. "test": [{"tag": "xxx", "contents": {"aaa": "yyy",...}},...] or "test": [{"xxx": []},...]
-        { sctName   :: !Text
-        , sctMap    :: ![(Text, Schema)]
+        { sctName     :: !Text
+        , sctTitle    :: !Text
+        , sctMap      :: ![(Text, Schema)]
+        , sctRequired :: ![Text]
         }
     deriving (Show)
 
