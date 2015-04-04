@@ -2,3 +2,6 @@
 dist
 .cabal-sandbox
 cabal.sandbox.config
+tests/*.json
+tests/*.py
+*.pyc
