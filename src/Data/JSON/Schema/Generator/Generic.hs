@@ -365,11 +365,19 @@ instance IsNullable (K1 i a) where
 
 class IsRecord (f :: * -> *) isRecord | f -> isRecord
 
+#if __GLASGOW_HASKELL__ >= 710
+instance (IsRecord f isRecord) => IsRecord (f :*: g) isRecord
+instance {-# OVERLAPPING #-} IsRecord (M1 S NoSelector f) False
+instance {-# OVERLAPPABLE #-} (IsRecord f isRecord) => IsRecord (M1 S c f) isRecord
+instance IsRecord (K1 i c) True
+instance IsRecord U1 False
+#else
 instance (IsRecord f isRecord) => IsRecord (f :*: g) isRecord
 instance IsRecord (M1 S NoSelector f) False
 instance (IsRecord f isRecord) => IsRecord (M1 S c f) isRecord
 instance IsRecord (K1 i c) True
 instance IsRecord U1 False
+#endif
 
 --------------------------------------------------------------------------------
 
