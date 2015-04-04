@@ -284,5 +284,5 @@ main = do
     ec <- system "python --version"
     case ec of
         ExitSuccess -> runTest dir
-        _ -> putStrLn "If you have 'python' in PATH, this test run jsonvalidator.py"
+        _ -> putStrLn "If you have 'python' in your PATH, this test runs jsonvalidator.py"
 
