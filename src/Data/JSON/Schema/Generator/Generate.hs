@@ -163,9 +163,9 @@ choices :: A.Options -> [SchemaChoice] -> [(Text,A.Value)]
 choices opts cs
     | isEnum         = [ ("enum", array $ foldr consAsEnum [] cs) ]
     | length cs == 1 = [ ("type", "object")
-                       , ("properties", head . foldr (consAsObject opts) [] $ cs)
+                       , ("properties", head $ map (consAsObject opts) cs)
                        ]
-    | otherwise      = [("oneOf", array $ foldr (consAsObject opts) [] cs)]
+    | otherwise      = [("oneOf", array $ map (consAsObject opts) cs)]
   where
     isEnum = A.allNullaryToStringTag opts && all enumerable cs
 
@@ -177,17 +177,17 @@ consAsEnum :: SchemaChoice -> [Text] -> [Text]
 consAsEnum (SCChoiceEnum tag _) ac = tag : ac
 consAsEnum s ac = trace ("conAsEnum could not handle: " ++ show s) $ ac
 
-consAsObject :: A.Options -> SchemaChoice -> [A.Value] -> [A.Value]
+consAsObject :: A.Options -> SchemaChoice -> A.Value
 consAsObject opts sc
-    | isArray opts = (:) $ object [ ("type", "array")
-                                  , ("title", string $ sctTitle sc)
-                                  , ("items" , conAsObject opts sc)
-                                  , ("additionalItems"     , false)
-                                  ]
-    | otherwise    = (:) $ object [ ("type", "object")
-                                  , ("title", string $ sctTitle sc)
-                                  , ("properties", conAsObject opts sc)
-                                  , ("additionalProperties", false)]
+    | isArray opts = object [ ("type", "array")
+                            , ("title", string $ sctTitle sc)
+                            , ("items" , conAsObject opts sc)
+                            , ("additionalItems"     , false)
+                            ]
+    | otherwise    = object [ ("type", "object")
+                            , ("title", string $ sctTitle sc)
+                            , ("properties", conAsObject opts sc)
+                            , ("additionalProperties", false)]
 
 isArray :: A.Options -> Bool
 isArray (A.sumEncoding -> A.TwoElemArray) = True
