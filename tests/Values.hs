@@ -5,7 +5,7 @@
 
 module Values where
 
-import Data.Aeson.TH
+import qualified Data.Aeson.TH as A
 import Types
 
 --
@@ -67,6 +67,6 @@ mixData13 =
 -- Test Print
 --
 
-$(deriveJSON defaultOptions ''RecordType2)
-$(deriveJSON defaultOptions ''ProductType2)
+$(A.deriveJSON A.defaultOptions ''RecordType2)
+$(A.deriveJSON A.defaultOptions ''ProductType2)
 
