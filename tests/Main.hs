@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -22,7 +23,10 @@ import Data.Map (fromList)
 import Data.Monoid ((<>))
 import Data.Proxy (Proxy(Proxy))
 import GHC.Generics
-import System.IO (Handle, IOMode(WriteMode), hPutStr, hPutStrLn, withFile)
+import System.Exit (ExitCode(ExitSuccess), exitWith)
+import System.IO (Handle, IOMode(WriteMode), hClose, hPutStr, hPutStrLn, withFile)
+import System.Process (CreateProcess(..), CmdSpec(RawCommand), StdStream(CreatePipe, Inherit)
+    , createProcess, system, waitForProcess)
 
 import Types
 import Values
@@ -115,11 +119,11 @@ pairsOptSymbol opts name =
         return (opt, name ++ "_" ++ show n)
 
 printValueAsJson :: (Generic a, A.GToJSON (Rep a)) => Handle -> [A.Options] -> String -> a -> IO ()
-printValueAsJson h opts name a =
+printValueAsJson h opts name value =
     forM_ (pairsOptSymbol opts name) . uncurry $ \opt symbol -> do
         hPutStrLn  h $ optToStr symbol opt
         hPutStr    h $ symbol ++ " = json.loads('"
-        BL.hPutStr h $ Main.encode opt a
+        BL.hPutStr h $ Main.encode opt value
         hPutStrLn  h "')"
         hPutStrLn  h ""
 
@@ -238,6 +242,36 @@ printValidatorInPython path = do
         printValidate h optPatterns
 
 --
+-- Run Test
+--
+
+pythonProcess :: FilePath -> CreateProcess
+pythonProcess dir =
+    CreateProcess
+        { cmdspec       = RawCommand "python" [dir ++ "/jsonvalidator.py"]
+        , cwd           = Nothing
+        , env           = Nothing
+        , std_in        = CreatePipe
+        , std_out       = Inherit
+        , std_err       = Inherit
+        , close_fds     = False
+        , create_group  = False
+#if MIN_VERSION_process(1,2,0)
+        , delegate_ctlc = True
+#endif
+        }
+
+runTest :: FilePath -> IO ()
+runTest dir = do
+    handles <- createProcess $ pythonProcess dir
+    case handles of
+        (Just hIn, _, _, hP) -> do
+            hClose hIn
+            ec <- waitForProcess hP
+            exitWith ec
+        _ -> fail $ "Failed to launch python"
+
+--
 -- Main
 --
 
@@ -247,4 +281,8 @@ main = do
     printValueAsJsonInPython (dir ++ "/jsondata.py")
     printTypeAsSchemaInJson (dir)
     printValidatorInPython (dir ++ "/jsonvalidator.py")
+    ec <- system "python --version"
+    case ec of
+        ExitSuccess -> runTest dir
+        _ -> putStrLn "If you have 'python' in PATH, this test run jsonvalidator.py"
 

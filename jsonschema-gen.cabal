@@ -59,6 +59,7 @@ test-suite test
                      , bytestring
                      , containers
                      , jsonschema-gen
+                     , process
                      , tagged
                      , text
                      , transformers
