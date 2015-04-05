@@ -42,13 +42,26 @@ import qualified Data.Text as Text
 
 --------------------------------------------------------------------------------
 
+-- | Options that specify how to generate schema definition automatically
+-- from your datatype.
+--
 data Options = Options
-    { baseUri :: String
-    , schemaIdSuffix :: String
-    , refSchemaMap :: Map String String
+    { baseUri :: String -- ^ shcema id prefix.
+    , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
+    , refSchemaMap :: Map String String -- ^ a mapping from datatypes to schema ids.
     }
     deriving Show
 
+-- | Default geerating 'Options':
+--
+-- @
+-- 'Options'
+-- { 'baseUri'        = ""
+-- , 'schemaIdSuffix' = ""
+-- , 'refSchemaMap'   = Map.empty
+-- }
+-- @
+--
 defaultOptions :: Options
 defaultOptions = Options
     { baseUri = ""

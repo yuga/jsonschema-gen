@@ -79,23 +79,23 @@ data Schema =
 --
 data SchemaChoice =
       SCChoiceEnum
-        { sctName  :: !Text -- ^ constructor name.
-        , sctTitle :: !Text -- ^ an arbitrary text. e.g. Types.UnitType1.UnitData11.
+        { sctName     :: !Text             --   constructor name.
+        , sctTitle    :: !Text             --   an arbitrary text. e.g. Types.UnitType1.UnitData11.
         }
       -- ^ Encoding for constructors that are all unit type.
       -- e.g. "test": {"enum": ["xxx", "yyy", "zzz"]}
     | SCChoiceArray
-        { sctName   :: !Text -- ^ constructor name.
-        , sctTitle  :: !Text -- ^ an arbitrary text. e.g. Types.ProductType1.ProductData11.
-        , sctArray  :: ![Schema] -- ^ parametes of constructor.
+        { sctName     :: !Text             --   constructor name.
+        , sctTitle    :: !Text             --   an arbitrary text. e.g. Types.ProductType1.ProductData11.
+        , sctArray    :: ![Schema]         --   parametes of constructor.
         }
       -- ^ Encoding for constructors that are non record type.
       -- e.g. "test": [{"tag": "xxx", "contents": []},...] or "test": [{"xxx": [],},...]
     | SCChoiceMap
-        { sctName     :: !Text -- ^ constructor name.
-        , sctTitle    :: !Text -- ^ an arbitrary text. e.g. Types.RecordType1.RecordData11.
-        , sctMap      :: ![(Text, Schema)] -- ^ list of record field name and schema in this constructor.
-        , sctRequired :: ![Text] -- ^ required field names.
+        { sctName     :: !Text             --   constructor name.
+        , sctTitle    :: !Text             --   an arbitrary text. e.g. Types.RecordType1.RecordData11.
+        , sctMap      :: ![(Text, Schema)] --   list of record field name and schema in this constructor.
+        , sctRequired :: ![Text]           --   required field names.
         }
       -- ^ Encoding for constructos that are record type.
       -- e.g. "test": [{"tag": "xxx", "contents": {"aaa": "yyy",...}},...] or "test": [{"xxx": []},...]

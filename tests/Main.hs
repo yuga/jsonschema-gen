@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Main where
 
@@ -30,6 +31,17 @@ import System.Process (CreateProcess(..), CmdSpec(RawCommand), StdStream(CreateP
 
 import Types
 import Values
+
+--
+-- Instances
+--
+
+instance G.JSONSchemaGen RecordType1
+instance G.JSONSchemaGen RecordType2
+instance G.JSONSchemaGen ProductType1
+instance G.JSONSchemaGen ProductType2
+instance G.JSONSchemaGen UnitType1
+instance G.JSONSchemaGen MixType1
 
 --
 -- TestData
@@ -140,7 +152,7 @@ printValueAsJsonInPython path = do
 -- Print type definitions as schema in individualy json files
 --
 
-printTypeAsSchema :: (Generic a, G.GJSONSchemaGen (Rep a), SchemaName (Rep a)) => FilePath -> [A.Options] -> Proxy a -> IO ()
+printTypeAsSchema :: (Generic a, G.JSONSchemaGen a, SchemaName (Rep a)) => FilePath -> [A.Options] -> Proxy a -> IO ()
 printTypeAsSchema dir opts a = do
     forM_ opts $ \opt -> do
         let filename = schemaName opt (fmap from a)
@@ -148,7 +160,7 @@ printTypeAsSchema dir opts a = do
         let suffix = dropWhile (not . (== '.')) filename
         let schemaOptions' = schemaOptions { G.schemaIdSuffix = suffix }
         withFile path WriteMode $ \h -> do
-            BL.hPutStrLn h $ G.generateWithOptions schemaOptions' opt a
+            BL.hPutStrLn h $ G.generate' schemaOptions' opt a
 
 schemaOptions :: G.Options
 schemaOptions = G.defaultOptions

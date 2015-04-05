@@ -4,7 +4,6 @@
 
 module Data.JSON.Schema.Generator.Generate
     ( convert
-    , convertWithOptions
     ) where
 
 #if MIN_VERSION_base(4,8,0)
@@ -22,11 +21,8 @@ import qualified Data.Vector as Vector
 
 --------------------------------------------------------------------------------
 
-convert :: Schema -> A.Value
-convert = convertWithOptions A.defaultOptions
-
-convertWithOptions :: A.Options -> Schema -> A.Value
-convertWithOptions = convert' False
+convert :: A.Options -> Schema -> A.Value
+convert = convert' False
 
 convert' :: Bool -> A.Options -> Schema -> A.Value
 convert' = (((A.Object . HashMap.fromList) .) .) . convertToList
