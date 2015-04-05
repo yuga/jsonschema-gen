@@ -260,49 +260,49 @@ class ToJSONSchemaDef f where
     toJSONSchemaDef :: Options -> Proxy (f a) -> Schema
 
 #if __GLASGOW_HASKELL__ >= 710
-instance {-# OVERLAPPING #-} (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toJSONSchemaDef' opts (Proxy :: Proxy a)
+instance {-# OVERLAPPING #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
+    toJSONSchemaDef opts _  = toJSONSchemaPrim opts (Proxy :: Proxy a)
 
-instance {-# OVERLAPPABLE #-} (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toJSONSchemaDef' opts (Proxy :: Proxy a)
+instance {-# OVERLAPPABLE #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
+    toJSONSchemaDef opts _ = toJSONSchemaPrim opts (Proxy :: Proxy a)
 #else
-instance (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toJSONSchemaDef' opts (Proxy :: Proxy a)
+instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
+    toJSONSchemaDef opts _  = toJSONSchemaPrim opts (Proxy :: Proxy a)
 
-instance (ToJSONSchemaDef' a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toJSONSchemaDef' opts (Proxy :: Proxy a)
+instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
+    toJSONSchemaDef opts _ = toJSONSchemaPrim opts (Proxy :: Proxy a)
 #endif
 
-class ToJSONSchemaDef' a where
-    toJSONSchemaDef' :: Options -> Proxy a -> Schema
+class JSONSchemaPrim a where
+    toJSONSchemaPrim :: Options -> Proxy a -> Schema
 
 #if __GLASGOW_HASKELL__ >= 710
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' String where
-    toJSONSchemaDef' _ _ = scString
+instance {-# OVERLAPPING #-} JSONSchemaPrim String where
+    toJSONSchemaPrim _ _ = scString
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Text where
-    toJSONSchemaDef' _ _ = scString
+instance {-# OVERLAPPING #-} JSONSchemaPrim Text where
+    toJSONSchemaPrim _ _ = scString
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' UTCTime where
-    toJSONSchemaDef' _ _ = scString { scFormat = Just "date-time" }
+instance {-# OVERLAPPING #-} JSONSchemaPrim UTCTime where
+    toJSONSchemaPrim _ _ = scString { scFormat = Just "date-time" }
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Int where
-    toJSONSchemaDef' _ _ = scInteger
+instance {-# OVERLAPPING #-} JSONSchemaPrim Int where
+    toJSONSchemaPrim _ _ = scInteger
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Integer where
-    toJSONSchemaDef' _ _ = scInteger
+instance {-# OVERLAPPING #-} JSONSchemaPrim Integer where
+    toJSONSchemaPrim _ _ = scInteger
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Float where
-    toJSONSchemaDef' _ _ = scNumber
+instance {-# OVERLAPPING #-} JSONSchemaPrim Float where
+    toJSONSchemaPrim _ _ = scNumber
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Double where
-    toJSONSchemaDef' _ _ = scNumber
+instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
+    toJSONSchemaPrim _ _ = scNumber
 
-instance {-# OVERLAPPING #-} ToJSONSchemaDef' Bool where
-    toJSONSchemaDef' _ _ = scBoolean
+instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
+    toJSONSchemaPrim _ _ = scBoolean
 
-instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
-    toJSONSchemaDef' opts a = SCRef
+instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => JSONSchemaPrim a where
+    toJSONSchemaPrim opts a = SCRef
         { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
         , scNullable = False
         }
@@ -310,32 +310,32 @@ instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDe
         mdname = moduleDatatypeName (fmap from a)
         defaultUri = baseUri opts ++ mdname ++ schemaIdSuffix opts
 #else
-instance ToJSONSchemaDef' String where
-    toJSONSchemaDef' _ _ = scString
+instance JSONSchemaPrim String where
+    toJSONSchemaPrim _ _ = scString
 
-instance ToJSONSchemaDef' Text where
-    toJSONSchemaDef' _ _ = scString
+instance JSONSchemaPrim Text where
+    toJSONSchemaPrim _ _ = scString
 
-instance ToJSONSchemaDef' UTCTime where
-    toJSONSchemaDef' _ _ = scString { scFormat = Just "date-time" }
+instance JSONSchemaPrim UTCTime where
+    toJSONSchemaPrim _ _ = scString { scFormat = Just "date-time" }
 
-instance ToJSONSchemaDef' Int where
-    toJSONSchemaDef' _ _ = scInteger
+instance JSONSchemaPrim Int where
+    toJSONSchemaPrim _ _ = scInteger
 
-instance ToJSONSchemaDef' Integer where
-    toJSONSchemaDef' _ _ = scInteger
+instance JSONSchemaPrim Integer where
+    toJSONSchemaPrim _ _ = scInteger
 
-instance ToJSONSchemaDef' Float where
-    toJSONSchemaDef' _ _ = scNumber
+instance JSONSchemaPrim Float where
+    toJSONSchemaPrim _ _ = scNumber
 
-instance ToJSONSchemaDef' Double where
-    toJSONSchemaDef' _ _ = scNumber
+instance JSONSchemaPrim Double where
+    toJSONSchemaPrim _ _ = scNumber
 
-instance ToJSONSchemaDef' Bool where
-    toJSONSchemaDef' _ _ = scBoolean
+instance JSONSchemaPrim Bool where
+    toJSONSchemaPrim _ _ = scBoolean
 
-instance (Generic a, GSCDatatype (Rep a)) => ToJSONSchemaDef' a where
-    toJSONSchemaDef' opts a = SCRef
+instance (Generic a, GSCDatatype (Rep a)) => JSONSchemaPrim a where
+    toJSONSchemaPrim opts a = SCRef
         { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
         , scNullable = False
         }
