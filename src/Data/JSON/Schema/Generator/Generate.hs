@@ -161,9 +161,9 @@ choices :: A.Options -> [SchemaChoice] -> [(Text,A.Value)]
 choices opts cs
     | isEnum         = [ ("enum", array $ map consAsEnum cs) ]
     | length cs == 1 = [ ("type", "object")
-                       , ("properties", head $ map (consAsObject opts) cs)
+                       , ("properties", head $ map (conAsObject opts) cs)
                        ]
-    | otherwise      = [("oneOf", array $ map (consAsObject opts) cs)]
+    | otherwise      = [("oneOf", array $ map (conAsObject opts) cs)]
   where
     isEnum = A.allNullaryToStringTag opts && all enumerable cs
 
@@ -175,26 +175,28 @@ consAsEnum :: SchemaChoice -> Text
 consAsEnum (SCChoiceEnum tag _) = tag
 consAsEnum s = error ("conAsEnum could not handle: " ++ show s)
 
-consAsObject :: A.Options -> SchemaChoice -> A.Value
-consAsObject opts sc
+conAsObject :: A.Options -> SchemaChoice -> A.Value
+conAsObject opts sc
     | isArray opts = object [ ("type", "array")
                             , ("title", string $ sctTitle sc)
-                            , ("items" , conAsObject opts sc)
-                            , ("additionalItems"     , false)
+                            , ("items" , conAsObject' opts sc)
+                            , ("minItems", number 2)
+                            , ("maxItems", number 2)
+                            , ("additionalItems", false)
                             ]
     | otherwise    = object [ ("type", "object")
                             , ("title", string $ sctTitle sc)
-                            , ("properties", conAsObject opts sc)
+                            , ("properties", conAsObject' opts sc)
                             , ("additionalProperties", false)]
 
 isArray :: A.Options -> Bool
 isArray (A.sumEncoding -> A.TwoElemArray) = True
 isArray _ = False
 
-conAsObject :: A.Options -> SchemaChoice -> A.Value
-conAsObject opts@(A.Options {A.sumEncoding = A.TaggedObject tFld cFld}) sc = conAsTag   opts (pack tFld) (pack cFld) sc
-conAsObject opts@(A.Options {A.sumEncoding = A.TwoElemArray          }) sc = conAsArray opts sc
-conAsObject opts@(A.Options {A.sumEncoding = A.ObjectWithSingleField }) sc = conAsMap   opts sc
+conAsObject' :: A.Options -> SchemaChoice -> A.Value
+conAsObject' opts@(A.Options {A.sumEncoding = A.TaggedObject tFld cFld}) sc = conAsTag   opts (pack tFld) (pack cFld) sc
+conAsObject' opts@(A.Options {A.sumEncoding = A.TwoElemArray          }) sc = conAsArray opts sc
+conAsObject' opts@(A.Options {A.sumEncoding = A.ObjectWithSingleField }) sc = conAsMap   opts sc
 
 conAsTag :: A.Options -> Text -> Text ->  SchemaChoice -> A.Value
 conAsTag opts tFld cFld (SCChoiceEnum  tag _)      = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts [])]

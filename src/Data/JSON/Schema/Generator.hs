@@ -5,6 +5,7 @@ module Data.JSON.Schema.Generator
     , module Data.JSON.Schema.Generator.Generate
     , module Data.JSON.Schema.Generator.Generic
     , generate
+    , generate'
     , generateWithOptions
     ) where
 
@@ -18,8 +19,11 @@ import GHC.Generics (Generic, Rep)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 
-generate :: (Generic a, JSONSchemaGen a) => Proxy a -> ByteString
+generate :: JSONSchemaGen a => Proxy a -> ByteString
 generate = A.encode . convert . toSchema
+
+generate' :: JSONSchemaGen a => A.Options -> Proxy a -> ByteString
+generate' opts = A.encode . convertWithOptions opts . toSchema
 
 generateWithOptions :: (Generic a, GJSONSchemaGen (Rep a)) => Options -> A.Options -> Proxy a -> ByteString
 generateWithOptions opts aopts = A.encode . convertWithOptions aopts . genericToSchema opts

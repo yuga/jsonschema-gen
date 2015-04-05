@@ -11,6 +11,8 @@ import Data.Text (Text)
 
 --------------------------------------------------------------------------------
 
+-- | A schema for a JSON value.
+--
 data Schema =
       SCSchema
         { scId          :: !Text
@@ -73,24 +75,34 @@ data Schema =
     | SCNull
     deriving (Show)
 
+-- | A sum encoding for ADT.
+--
 data SchemaChoice =
-      SCChoiceEnum -- [*]; e.g. "test": {"enum": ["xxx", "yyy", "zzz"]}
-        { sctName  :: !Text
-        , sctTitle :: !Text
+      SCChoiceEnum
+        { sctName  :: !Text -- ^ constructor name.
+        , sctTitle :: !Text -- ^ an arbitrary text. e.g. Types.UnitType1.UnitData11.
         }
-    | SCChoiceArray -- non record of [* -> .. -> *]; e.g. "test": [{"tag": "xxx", "contents": []},...] or "test": [{"xxx": [],},...]
-        { sctName   :: !Text
-        , sctTitle  :: !Text
-        , sctArray  :: ![Schema]
+      -- ^ Encoding for constructors that are all unit type.
+      -- e.g. "test": {"enum": ["xxx", "yyy", "zzz"]}
+    | SCChoiceArray
+        { sctName   :: !Text -- ^ constructor name.
+        , sctTitle  :: !Text -- ^ an arbitrary text. e.g. Types.ProductType1.ProductData11.
+        , sctArray  :: ![Schema] -- ^ parametes of constructor.
         }
-    | SCChoiceMap -- record of [* -> .. -> *] e.g. "test": [{"tag": "xxx", "contents": {"aaa": "yyy",...}},...] or "test": [{"xxx": []},...]
-        { sctName     :: !Text
-        , sctTitle    :: !Text
-        , sctMap      :: ![(Text, Schema)]
-        , sctRequired :: ![Text]
+      -- ^ Encoding for constructors that are non record type.
+      -- e.g. "test": [{"tag": "xxx", "contents": []},...] or "test": [{"xxx": [],},...]
+    | SCChoiceMap
+        { sctName     :: !Text -- ^ constructor name.
+        , sctTitle    :: !Text -- ^ an arbitrary text. e.g. Types.RecordType1.RecordData11.
+        , sctMap      :: ![(Text, Schema)] -- ^ list of record field name and schema in this constructor.
+        , sctRequired :: ![Text] -- ^ required field names.
         }
+      -- ^ Encoding for constructos that are record type.
+      -- e.g. "test": [{"tag": "xxx", "contents": {"aaa": "yyy",...}},...] or "test": [{"xxx": []},...]
     deriving (Show)
 
+-- ^ A smart consturctor for String.
+--
 scString :: Schema
 scString = SCString
     { scDescription = Nothing
@@ -100,6 +112,8 @@ scString = SCString
     , scUpperBound = Nothing
     }
 
+-- ^ A smart consturctor for Integer.
+--
 scInteger :: Schema
 scInteger = SCInteger
     { scDescription = Nothing
@@ -108,6 +122,8 @@ scInteger = SCInteger
     , scUpperBound = Nothing
     }
 
+-- ^ A smart consturctor for Number.
+--
 scNumber :: Schema
 scNumber = SCNumber
     { scDescription = Nothing
@@ -116,6 +132,8 @@ scNumber = SCNumber
     , scUpperBound = Nothing
     }
 
+-- ^ A smart consturctor for Boolean.
+--
 scBoolean :: Schema
 scBoolean = SCBoolean
     { scDescription = Nothing
