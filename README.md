@@ -1,7 +1,7 @@
 # jsonschema-gen
 
 `jsonschema-gen` is a Haskell library to generate JSON Schema that is based on your existing Haskell datatype.
-You can use generated schema to validate data in json format with the Haskell datatype.
+Generated schema can be extracted in JSON format. You can use it with any tools that support JSON Schema file.
 
 This package provides
 
