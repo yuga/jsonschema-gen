@@ -20,8 +20,6 @@ import qualified Data.Aeson.Types as A
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Vector as Vector
 
-import Debug.Trace (trace)
-
 --------------------------------------------------------------------------------
 
 convert :: Schema -> A.Value
@@ -161,7 +159,7 @@ false = A.Bool False
 
 choices :: A.Options -> [SchemaChoice] -> [(Text,A.Value)]
 choices opts cs
-    | isEnum         = [ ("enum", array $ foldr consAsEnum [] cs) ]
+    | isEnum         = [ ("enum", array $ map consAsEnum cs) ]
     | length cs == 1 = [ ("type", "object")
                        , ("properties", head $ map (consAsObject opts) cs)
                        ]
@@ -173,9 +171,9 @@ enumerable :: SchemaChoice -> Bool
 enumerable (SCChoiceEnum _ _) = True
 enumerable _                  = False
 
-consAsEnum :: SchemaChoice -> [Text] -> [Text]
-consAsEnum (SCChoiceEnum tag _) ac = tag : ac
-consAsEnum s ac = trace ("conAsEnum could not handle: " ++ show s) $ ac
+consAsEnum :: SchemaChoice -> Text
+consAsEnum (SCChoiceEnum tag _) = tag
+consAsEnum s = error ("conAsEnum could not handle: " ++ show s)
 
 consAsObject :: A.Options -> SchemaChoice -> A.Value
 consAsObject opts sc

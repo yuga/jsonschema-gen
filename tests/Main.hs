@@ -182,15 +182,15 @@ printTypeAsSchemaInJson dir = do
 convertToPythonLoadingSchema :: (Generic a, SchemaName (Rep a)) => [A.Options] -> Proxy a -> ([String], [String])
 convertToPythonLoadingSchema opts a =
     let fa = fmap from a
-        toLoader opt ac =
+        toLoader opt =
             let filename = schemaName opt fa
                 symbol = "schema_" ++ map dotToLowline filename
-            in (symbol ++ " = json.load(codecs.open(schemaPath + '" ++ filename ++ "', 'r', 'utf-8'))") : ac
-        toStore opt ac =
+            in (symbol ++ " = json.load(codecs.open(schemaPath + '" ++ filename ++ "', 'r', 'utf-8'))")
+        toStore opt =
             let filename = schemaName opt fa
                 symbol = "schema_" ++ map dotToLowline filename
-            in ("'" ++ G.baseUri schemaOptions ++ filename ++ "' : " ++ symbol) : ac
-    in (foldr toLoader [] &&& foldr toStore []) opts
+            in ("'" ++ G.baseUri schemaOptions ++ filename ++ "' : " ++ symbol)
+    in (map toLoader &&& map toStore) opts
 
 dotToLowline :: Char -> Char
 dotToLowline '.' = '_'
