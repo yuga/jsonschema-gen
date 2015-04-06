@@ -71,38 +71,24 @@ testData =
 -- Encoder
 --
 
-taggedObjectOption :: A.Options
-taggedObjectOption = A.defaultOptions
-    { A.sumEncoding = A.defaultTaggedObject
-    }
-
-objectOption :: A.Options
-objectOption = A.defaultOptions
-    { A.sumEncoding = A.ObjectWithSingleField
-    }
-
-arrayOption :: A.Options
-arrayOption = A.defaultOptions
-    { A.sumEncoding = A.TwoElemArray
-    }
-
-updateOptions :: Bool -> Bool -> A.Options -> A.Options
-updateOptions allNullary omitNothing opts = opts
+aesonOptions :: Bool -> Bool -> A.SumEncoding -> A.Options
+aesonOptions allNullary omitNothing sumEncoding = A.defaultOptions
     { A.allNullaryToStringTag = allNullary
     , A.omitNothingFields = omitNothing
+    , A.sumEncoding = sumEncoding
     }
 
 optPatterns :: [A.Options]
 optPatterns =
-    [ updateOptions True True
-    , updateOptions True False
-    , updateOptions False True
-    , updateOptions False False
+    [ aesonOptions True True
+    , aesonOptions True False
+    , aesonOptions False True
+    , aesonOptions False False
     ]
     <*>
-    [ taggedObjectOption
-    , objectOption
-    , arrayOption
+    [ A.defaultTaggedObject
+    , A.ObjectWithSingleField
+    , A.TwoElemArray
     ]
 
 encode :: (Generic a, A.GToJSON (Rep a)) => A.Options -> a -> BL.ByteString
