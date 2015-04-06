@@ -22,6 +22,7 @@ import qualified Data.List as List
 import Data.Map (fromList)
 import Data.Monoid ((<>))
 import Data.Proxy (Proxy(Proxy))
+import Data.Typeable (typeOf)
 import GHC.Generics
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 import System.IO (Handle, IOMode(WriteMode), hClose, hPutStr, hPutStrLn, withFile)
@@ -142,7 +143,7 @@ printTypeAsSchema dir opts a = do
     forM_ opts $ \opt -> do
         let fa = fmap from a
         let filename = schemaName opt fa
-        let suffix = schemaSuffix opt fa
+        let suffix = "." ++ schemaSuffix opt fa
         let path = dir ++ "/" ++ filename
         let schemaOptions' = schemaOptions { G.schemaIdSuffix = suffix }
         withFile path WriteMode $ \h -> do
@@ -152,9 +153,10 @@ schemaOptions :: G.Options
 schemaOptions = G.defaultOptions
     { G.baseUri = "https://github.com/yuga/jsonschema-gen/tests/"
     , G.schemaIdSuffix = ".json"
-    , G.refSchemaMap = fromList [ ("Types.RecordType2" , "https://github.com/yuga/jsonschema-gen/tests/Types.RecordType2.True.False.tag.json")
-                                , ("Types.ProductType2", "https://github.com/yuga/jsonschema-gen/tests/Types.ProductTypw2.True.False.tag.json")
-                                ]
+    , G.refSchemaMap = fromList
+        [ (typeOf (undefined :: RecordType2),  "https://github.com/yuga/jsonschema-gen/tests/Types.RecordType2.True.False.tag.json")
+        , (typeOf (undefined :: ProductType2), "https://github.com/yuga/jsonschema-gen/tests/Types.ProductType2.True.False.tag.json")
+        ]
     }
 
 class SchemaName f where

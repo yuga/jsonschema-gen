@@ -7,6 +7,7 @@ import Data.JSON.Schema.Generator.Types (Schema)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Proxy (Proxy)
+import Data.Typeable (TypeRep)
 import GHC.Generics (Generic(from), Rep)
 
 --------------------------------------------------------------------------------
@@ -31,7 +32,7 @@ genericToSchema opts = gToSchema opts . fmap from
 data Options = Options
     { baseUri :: String -- ^ shcema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
-    , refSchemaMap :: Map String String -- ^ a mapping from datatypes to schema ids.
+    , refSchemaMap :: Map TypeRep String -- ^ a mapping from datatypes to schema ids.
     }
     deriving Show
 

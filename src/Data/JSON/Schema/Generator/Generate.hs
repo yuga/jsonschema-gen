@@ -31,18 +31,19 @@ convertToList :: Bool -> A.Options -> Schema -> [(Text,A.Value)]
 convertToList inArray opts s = foldr1 (++) $
     [ jsId
     , jsSchema
-    , jsSimpleType          opts
+    , jsSimpleType           opts
     , jsTitle
     , jsDescription
     , jsReference
-    , jsType        inArray opts
+    , jsType         inArray opts
     , jsLowerBound
     , jsUpperBound
-    , jsRequired            opts
+    , jsRequired             opts
     , jsValue
-    , jsProperties          opts
-    , jsOneOf               opts
-    , jsDefinitions         opts
+    , jsProperties           opts
+    , jsPatternProps         opts
+    , jsOneOf                opts
+    , jsDefinitions          opts
     ] <*> [s]
 
 --------------------------------------------------------------------------------
@@ -125,6 +126,10 @@ jsProperties :: A.Options -> Schema -> [(Text,A.Value)]
 jsProperties opts SCObject {scProperties = p} = [("properties", object $ toMap opts p)]
 jsProperties _ _ = []
 
+jsPatternProps :: A.Options -> Schema -> [(Text,A.Value)]
+jsPatternProps opts SCObject {scPatternProps = p} = [("patternProperties", object $ toMap opts p)]
+jsPatternProps _ _ = []
+
 jsOneOf :: A.Options -> Schema -> [(Text,A.Value)]
 jsOneOf opts SCOneOf {scChoices = t} = choices opts t
 jsOneOf _ _ = []
@@ -159,7 +164,7 @@ choices opts cs
     | length cs == 1 = [ ("type", "object")
                        , ("properties", head $ map (conAsObject opts) cs)
                        ]
-    | otherwise      = [("oneOf", array $ map (conAsObject opts) cs)]
+    | otherwise      = [ ("oneOf", array $ map (conAsObject opts) cs) ]
   where
     isEnum = A.allNullaryToStringTag opts && all enumerable cs
 

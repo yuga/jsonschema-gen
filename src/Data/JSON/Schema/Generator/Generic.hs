@@ -27,8 +27,13 @@ import Data.Monoid (mappend, mempty)
 import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), GJSONSchemaGen(..), Options(..))
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
+import Data.HashMap.Strict (HashMap)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Proxy (Proxy(Proxy))
 import Data.Tagged (Tagged(Tagged, unTagged))
+import qualified Data.Text as Text
+import Data.Typeable (Typeable, typeOf)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import GHC.Generics (
@@ -36,8 +41,6 @@ import GHC.Generics (
     , NoSelector
     , C1, D1, K1, M1(unM1), S1, U1, (:+:), (:*:)
     , S)
-
-import qualified Data.Text as Text
 
 --------------------------------------------------------------------------------
 
@@ -105,6 +108,7 @@ instance (RecordToPairs f) => GSCSimpleTypeS f True where
         , scDescription = Nothing
         , scNullable = False
         , scProperties = recordToPairs opts False (Proxy :: Proxy (f p))
+        , scPatternProps = []
         , scRequired = map fst $ recordToPairs opts True (Proxy :: Proxy (f p))
         }
 
@@ -275,9 +279,39 @@ instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
     toJSONSchemaPrim _ _ = scBoolean
 
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
+    toJSONSchemaPrim opts _ = SCArray
+        { scTitle = ""
+        , scDefinitions = Nothing
+        , scNullable = False
+        , scItems = [toSchema opts (Proxy :: Proxy a)]
+        , scLowerBound = Nothing
+        , scUpperBound = Nothing
+        }
+
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+    toJSONSchemaPrim opts _ = SCObject
+        { scTitle = ""
+        , scDescription = Nothing
+        , scNullable = False
+        , scProperties = []
+        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scRequired = []
+        }
+
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+    toJSONSchemaPrim opts _ = SCObject
+        { scTitle = ""
+        , scDescription = Nothing
+        , scNullable = False
+        , scProperties = []
+        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scRequired = []
+        }
+
 instance {-# OVERLAPPABLE #-} (JSONSchemaGen a) => JSONSchemaPrim a where
     toJSONSchemaPrim opts a = SCRef
-        { scReference = scId $ toSchema opts a
+        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
         }
 #else
@@ -305,11 +339,42 @@ instance JSONSchemaPrim Double where
 instance JSONSchemaPrim Bool where
     toJSONSchemaPrim _ _ = scBoolean
 
-instance (JSONSchemaGen a) => JSONSchemaPrim a where
+instance (JSONSchemaGen a) => JSONSchemaPrim [a] where
+    toJSONSchemaPrim opts _ = SCArray
+        { scTitle = ""
+        , scDescription = Nothing
+        , scNullable = False
+        , scItems = [toSchema opts (Proxy :: Proxy a)]
+        , scLowerBound = Nothing
+        , scUpperBound = Nothing
+        }
+
+instance (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+    toJSONSchemaPrim opts _ = SCObject
+        { scTitle = ""
+        , scDescription = Nothing
+        , scNullable = False
+        , scProperties = []
+        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scRequired = []
+        }
+
+instance (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+    toJSONSchemaPrim opts _ = SCObject
+        { scTitle = ""
+        , scDescription = Nothing
+        , scNullable = False
+        , scProperties = []
+        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scRequired = []
+        }
+
+instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
     toJSONSchemaPrim opts a = SCRef
-        { scReference = scId $ toSchema opts a
+        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
         }
+      where
 #endif
 
 class IsNullable f where

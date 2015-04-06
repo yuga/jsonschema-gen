@@ -15,62 +15,63 @@ import Data.Text (Text)
 --
 data Schema =
       SCSchema
-        { scId          :: !Text
-        , scUsedSchema  :: !Text
-        , scSimpleType  :: !Schema
-        , scDefinitions :: ![(Text, Schema)]
+        { scId           :: !Text
+        , scUsedSchema   :: !Text
+        , scSimpleType   :: !Schema
+        , scDefinitions  :: ![(Text, Schema)]
         }
     | SCString
-        { scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
-        , scFormat      :: !(Maybe Text)
-        , scLowerBound  :: !(Maybe Integer)
-        , scUpperBound  :: !(Maybe Integer)
+        { scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
+        , scFormat       :: !(Maybe Text)
+        , scLowerBound   :: !(Maybe Integer)
+        , scUpperBound   :: !(Maybe Integer)
         }
     | SCInteger
-        { scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
-        , scLowerBound  :: !(Maybe Integer)
-        , scUpperBound  :: !(Maybe Integer)
+        { scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
+        , scLowerBound   :: !(Maybe Integer)
+        , scUpperBound   :: !(Maybe Integer)
         }
     | SCNumber
-        { scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
-        , scLowerBound  :: !(Maybe Integer)
-        , scUpperBound  :: !(Maybe Integer)
+        { scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
+        , scLowerBound   :: !(Maybe Integer)
+        , scUpperBound   :: !(Maybe Integer)
         }
     | SCBoolean
-        { scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
+        { scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
         }
     | SCConst
-        { scTitle       :: !Text
-        , scDescription :: !(Maybe Text)
-        , scValue       :: !Text
+        { scTitle        :: !Text
+        , scDescription  :: !(Maybe Text)
+        , scValue        :: !Text
         }
     | SCObject
-        { scTitle       :: !Text
-        , scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
-        , scProperties  :: ![(Text, Schema)]
-        , scRequired    :: ![Text]
+        { scTitle        :: !Text
+        , scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
+        , scProperties   :: ![(Text, Schema)]
+        , scPatternProps :: ![(Text, Schema)]
+        , scRequired     :: ![Text]
         }
     | SCArray
-        { scTitle       :: !Text
-        , scDescription :: !(Maybe Text)
-        , scNullable    :: !Bool
-        , scItems       :: ![Schema]
-        , scLowerBound  :: !(Maybe Integer)
-        , scUpperBound  :: !(Maybe Integer)
+        { scTitle        :: !Text
+        , scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
+        , scItems        :: ![Schema]
+        , scLowerBound   :: !(Maybe Integer)
+        , scUpperBound   :: !(Maybe Integer)
         }
     | SCOneOf
-        { scTitle       :: !Text
-        , scDescription :: !(Maybe Text)
-        , scChoices     :: ![SchemaChoice]
+        { scTitle        :: !Text
+        , scDescription  :: !(Maybe Text)
+        , scChoices      :: ![SchemaChoice]
         }
     | SCRef
-        { scReference   :: !Text
-        , scNullable    :: !Bool
+        { scReference    :: !Text
+        , scNullable     :: !Bool
         }
     | SCNull
     deriving (Show)
