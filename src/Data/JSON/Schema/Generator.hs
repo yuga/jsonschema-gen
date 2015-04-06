@@ -19,9 +19,10 @@ module Data.JSON.Schema.Generator
     ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), genericToSchema)
+import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), GJSONSchemaGen(..), Options(..)
+    , defaultOptions, genericToSchema)
 import Data.JSON.Schema.Generator.Generate (convert)
-import Data.JSON.Schema.Generator.Generic (GJSONSchemaGen(..), Options(..), defaultOptions)
+import Data.JSON.Schema.Generator.Generic ()
 import Data.Proxy (Proxy)
 
 import qualified Data.Aeson as A

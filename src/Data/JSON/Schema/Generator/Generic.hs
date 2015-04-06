@@ -14,6 +14,8 @@
 {-# LANGUAGE OverlappingInstances #-}
 #endif
 
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Data.JSON.Schema.Generator.Generic where
 
 #if MIN_VERSION_base(4,8,0)
@@ -22,52 +24,22 @@ import Control.Applicative (pure)
 import Data.Monoid (mappend, mempty)
 #endif
 
+import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), GJSONSchemaGen(..), Options(..))
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.Tagged (Tagged(Tagged, unTagged))
 import Data.Text (Text)
 import Data.Time (UTCTime)
-import GHC.Generics (Generic(from), Rep
-    , Datatype(datatypeName, moduleName), Constructor(conName), Selector(selName)
+import GHC.Generics (
+      Datatype(datatypeName, moduleName), Constructor(conName), Selector(selName)
     , NoSelector
     , C1, D1, K1, M1(unM1), S1, U1, (:+:), (:*:)
-    , S
-    , from)
+    , S)
 
 import qualified Data.Text as Text
 
 --------------------------------------------------------------------------------
-
--- | Options that specify how to generate schema definition automatically
--- from your datatype.
---
-data Options = Options
-    { baseUri :: String -- ^ shcema id prefix.
-    , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
-    , refSchemaMap :: Map String String -- ^ a mapping from datatypes to schema ids.
-    }
-    deriving Show
-
--- | Default geerating 'Options':
---
--- @
--- 'Options'
--- { 'baseUri'        = ""
--- , 'schemaIdSuffix' = ""
--- , 'refSchemaMap'   = Map.empty
--- }
--- @
---
-defaultOptions :: Options
-defaultOptions = Options
-    { baseUri = ""
-    , schemaIdSuffix = ""
-    , refSchemaMap = Map.empty
-    }
 
 data Env = Env
     { envModuleName   :: !String
@@ -79,32 +51,21 @@ data Env = Env
 initEnv :: Env
 initEnv = Env "" "" "" ""
 
-class GJSONSchemaGen f where
-    gToSchema :: Options -> Proxy (f a) -> Schema
-
 instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
-        { scId = Text.pack $ baseUri opts ++ moduleDatatypeName pd ++ schemaIdSuffix opts
+        { scId = Text.pack $ baseUri opts ++ modName ++ "." ++ typName ++ schemaIdSuffix opts
         , scUsedSchema = "http://json-schema.org/draft-04/schema#"
         , scSimpleType = (simpleType opts env . fmap unM1 $ pd)
-            { scTitle = Text.pack $ moduleDatatypeName pd
+            { scTitle = Text.pack $ modName ++ "." ++ typName
             }
         , scDefinitions = mempty
         }
       where
-        env = initEnv { envModuleName = moduleName' pd
-                      , envDatatypeName = datatypeName' pd
+        modName = moduleName (undefined :: D1 d f p)
+        typName = datatypeName (undefined :: D1 d f p)
+        env = initEnv { envModuleName = modName
+                      , envDatatypeName = typName
                       }
-
-class GSCDatatype f where
-    moduleDatatypeName :: Proxy (f a) -> String
-    moduleName' :: Proxy (f a) -> String
-    datatypeName' :: Proxy (f a) -> String
-
-instance (Datatype d) => GSCDatatype (D1 d f) where
-    moduleDatatypeName d = moduleName' d ++ "." ++ datatypeName' d
-    moduleName' _ = moduleName (undefined :: D1 d f p)
-    datatypeName' _ = datatypeName (undefined :: D1 d f p)
 
 --------------------------------------------------------------------------------
 
@@ -314,14 +275,11 @@ instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
     toJSONSchemaPrim _ _ = scBoolean
 
-instance {-# OVERLAPPABLE #-} (Generic a, GSCDatatype (Rep a)) => JSONSchemaPrim a where
+instance {-# OVERLAPPABLE #-} (JSONSchemaGen a) => JSONSchemaPrim a where
     toJSONSchemaPrim opts a = SCRef
-        { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
+        { scReference = scId $ toSchema opts a
         , scNullable = False
         }
-      where
-        mdname = moduleDatatypeName (fmap from a)
-        defaultUri = baseUri opts ++ mdname ++ schemaIdSuffix opts
 #else
 instance JSONSchemaPrim String where
     toJSONSchemaPrim _ _ = scString
@@ -347,14 +305,11 @@ instance JSONSchemaPrim Double where
 instance JSONSchemaPrim Bool where
     toJSONSchemaPrim _ _ = scBoolean
 
-instance (Generic a, GSCDatatype (Rep a)) => JSONSchemaPrim a where
+instance (JSONSchemaGen a) => JSONSchemaPrim a where
     toJSONSchemaPrim opts a = SCRef
-        { scReference = Text.pack . fromMaybe defaultUri $ Map.lookup mdname (refSchemaMap opts)
+        { scReference = scId $ toSchema opts a
         , scNullable = False
         }
-      where
-        mdname = moduleDatatypeName (fmap from a)
-        defaultUri = baseUri opts ++ mdname ++ schemaIdSuffix opts
 #endif
 
 class IsNullable f where

@@ -18,7 +18,6 @@ import qualified Data.Aeson as A
 import qualified Data.Aeson.TH as A
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.JSON.Schema.Generator as G
-import qualified Data.JSON.Schema.Generator.Generic as G
 import qualified Data.List as List
 import Data.Map (fromList)
 import Data.Monoid ((<>))
@@ -141,9 +140,10 @@ printValueAsJsonInPython path = do
 printTypeAsSchema :: (Generic a, G.JSONSchemaGen a, SchemaName (Rep a)) => FilePath -> [A.Options] -> Proxy a -> IO ()
 printTypeAsSchema dir opts a = do
     forM_ opts $ \opt -> do
-        let filename = schemaName opt (fmap from a)
+        let fa = fmap from a
+        let filename = schemaName opt fa
+        let suffix = schemaSuffix opt fa
         let path = dir ++ "/" ++ filename
-        let suffix = dropWhile (not . (== '.')) filename
         let schemaOptions' = schemaOptions { G.schemaIdSuffix = suffix }
         withFile path WriteMode $ \h -> do
             BL.hPutStrLn h $ G.generate' schemaOptions' opt a
@@ -159,10 +159,15 @@ schemaOptions = G.defaultOptions
 
 class SchemaName f where
     schemaName :: A.Options -> Proxy (f a) -> FilePath
+    schemaSuffix :: A.Options -> Proxy (f a) -> String
 
 instance (Datatype d) => SchemaName (D1 d f) where
-    schemaName A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } p =
-        G.moduleDatatypeName p ++ "." ++ show a ++ "." ++ show b ++ "." ++ showC c ++ G.schemaIdSuffix schemaOptions
+    schemaName opt p = modName ++ "." ++ typName ++ "." ++ schemaSuffix opt p
+      where
+        modName = moduleName (undefined :: D1 d f p)
+        typName = datatypeName (undefined :: D1 d f p)
+    schemaSuffix A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } _ =
+        show a ++ "." ++ show b ++ "." ++ showC c ++ G.schemaIdSuffix schemaOptions
 
 printTypeAsSchemaInJson :: FilePath -> IO ()
 printTypeAsSchemaInJson dir = do
