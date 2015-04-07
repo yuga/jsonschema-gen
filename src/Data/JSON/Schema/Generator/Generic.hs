@@ -374,7 +374,6 @@ instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
         { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
         }
-      where
 #endif
 
 class IsNullable f where
