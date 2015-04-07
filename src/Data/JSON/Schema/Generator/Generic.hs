@@ -54,7 +54,7 @@ data Env = Env
 initEnv :: Env
 initEnv = Env "" "" "" ""
 
-instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
+instance (Datatype d, SimpleType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
         { scId = Text.pack $ baseUri opts ++ modName ++ "." ++ typName ++ schemaIdSuffix opts
         , scUsedSchema = "http://json-schema.org/draft-04/schema#"
@@ -72,10 +72,10 @@ instance (Datatype d, GSCSimpleType f) => GJSONSchemaGen (D1 d f) where
 
 --------------------------------------------------------------------------------
 
-class GSCSimpleType f where
+class SimpleType f where
     simpleType :: Options -> Env -> Proxy (f a) -> Schema
 
-instance (Constructor c) => GSCSimpleType (C1 c U1) where
+instance (Constructor c) => SimpleType (C1 c U1) where
     simpleType _ env _ = SCConst
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ conname
         , scDescription = Nothing
@@ -84,25 +84,25 @@ instance (Constructor c) => GSCSimpleType (C1 c U1) where
       where
         conname = conName (undefined :: C1 c U1 p)
 
-instance (IsRecord f isRecord, GSCSimpleTypeS f isRecord, Constructor c) => GSCSimpleType (C1 c f) where
+instance (IsRecord f isRecord, SimpleTypeS f isRecord, Constructor c) => SimpleType (C1 c f) where
     simpleType opts env _ = (unTagged :: Tagged isRecord Schema -> Schema) . simpleTypeS opts env' $ (Proxy :: Proxy (f p))
       where
         env' = env { envConName = conName (undefined :: C1 c f p) }
 
 -- there are multiple constructors
 #if __GLASGOW_HASKELL__ >= 710
-instance {-# OVERLAPPABLE #-} (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
+instance {-# OVERLAPPABLE #-} (AllNullary f allNullary, SimpleTypeM f allNullary) => SimpleType f where
     simpleType opts env _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts env $ (Proxy :: Proxy (f p))
 #else
-instance (AllNullary f allNullary, GSCSimpleTypeM f allNullary) => GSCSimpleType f where
+instance (AllNullary f allNullary, SimpleTypeM f allNullary) => SimpleType f where
     simpleType opts env _ = (unTagged :: Tagged allNullary Schema -> Schema) . simpleTypeM opts env $ (Proxy :: Proxy (f p))
 #endif
 
-class GSCSimpleTypeS f isRecord where
+class SimpleTypeS f isRecord where
     simpleTypeS :: Options -> Env -> Proxy (f a) -> Tagged isRecord Schema
 
 -- Record
-instance (RecordToPairs f) => GSCSimpleTypeS f True where
+instance (RecordToPairs f) => SimpleTypeS f True where
     simpleTypeS opts env _ = Tagged SCObject
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
@@ -113,7 +113,7 @@ instance (RecordToPairs f) => GSCSimpleTypeS f True where
         }
 
 -- Product
-instance (ProductToList f) => GSCSimpleTypeS f False where
+instance (ProductToList f) => SimpleTypeS f False where
     simpleTypeS opts env _ = Tagged SCArray
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
@@ -123,11 +123,11 @@ instance (ProductToList f) => GSCSimpleTypeS f False where
         , scUpperBound = Nothing
         }
 
-class GSCSimpleTypeM f allNullary  where
+class SimpleTypeM f allNullary  where
     simpleTypeM :: Options -> Env -> Proxy (f a) -> Tagged allNullary Schema
 
 -- allNullary
-instance (SumToEnum f) => GSCSimpleTypeM f True where
+instance (SumToEnum f) => SimpleTypeM f True where
     simpleTypeM _ env _ = Tagged SCOneOf
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
@@ -135,7 +135,7 @@ instance (SumToEnum f) => GSCSimpleTypeM f True where
         }
 
 -- not allNullary
-instance (SumToArrayOrMap f) => GSCSimpleTypeM f False where
+instance (SumToArrayOrMap f) => SimpleTypeM f False where
     simpleTypeM opts env _ = Tagged SCOneOf
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
@@ -250,6 +250,8 @@ instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
     toJSONSchemaDef opts _ = toSchemaPrim opts (Proxy :: Proxy a)
 #endif
+
+--------------------------------------------------------------------------------
 
 class JSONSchemaPrim a where
     toSchemaPrim :: Options -> Proxy a -> Schema
