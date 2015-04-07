@@ -39,11 +39,12 @@ convertToList inArray opts s = foldr1 (++) $
     , jsFormat
     , jsLowerBound
     , jsUpperBound
-    , jsRequired             opts
     , jsValue
+    , jsItems                opts
     , jsProperties           opts
     , jsPatternProps         opts
     , jsOneOf                opts
+    , jsRequired             opts
     , jsDefinitions          opts
     ] <*> [s]
 
@@ -62,10 +63,14 @@ jsSimpleType opts SCSchema {scSimpleType = s} = convertToList False opts s
 jsSimpleType _ _ = []
 
 jsTitle :: Schema -> [(Text,A.Value)]
-jsTitle SCConst  {scTitle = t } = [("title", string t)]
-jsTitle SCObject {scTitle = t } = [("title", string t)]
-jsTitle SCArray  {scTitle = t } = [("title", string t)]
-jsTitle SCOneOf  {scTitle = t } = [("title", string t)]
+jsTitle SCConst  {scTitle = "" } = []
+jsTitle SCConst  {scTitle = t  } = [("title", string t)]
+jsTitle SCObject {scTitle = "" } = []
+jsTitle SCObject {scTitle = t  } = [("title", string t)]
+jsTitle SCArray  {scTitle = "" } = []
+jsTitle SCArray  {scTitle = t  } = [("title", string t)]
+jsTitle SCOneOf  {scTitle = "" } = []
+jsTitle SCOneOf  {scTitle = t  } = [("title", string t)]
 jsTitle _ = []
 
 jsDescription :: Schema -> [(Text,A.Value)]
@@ -118,14 +123,13 @@ jsUpperBound SCNumber {scUpperBound = (Just n)} = [("maximum",   number n)]
 jsUpperBound SCArray  {scUpperBound = (Just n)} = [("maxItems",  number n)]
 jsUpperBound _ = []
 
-jsRequired :: A.Options -> Schema -> [(Text,A.Value)]
-jsRequired       A.Options {A.omitNothingFields = True}  SCObject {scRequired = r  } = [("required", array r)]
-jsRequired opts@(A.Options {A.omitNothingFields = _   }) SCObject {scProperties = p} = [("required", array . map fst $ toMap opts p)]
-jsRequired _ _ = []
-
 jsValue :: Schema -> [(Text,A.Value)]
 jsValue SCConst {scValue = v} = [("enum", array [v])]
 jsValue _ = []
+
+jsItems :: A.Options -> Schema -> [(Text,A.Value)]
+jsItems opts SCArray {scItems = items} = [("items", array . map (convert' True opts) $ items)]
+jsItems _ _ = []
 
 jsProperties :: A.Options -> Schema -> [(Text,A.Value)]
 jsProperties opts SCObject {scProperties = p} = [("properties", object $ toMap opts p)]
@@ -139,6 +143,11 @@ jsPatternProps _ _ = []
 jsOneOf :: A.Options -> Schema -> [(Text,A.Value)]
 jsOneOf opts SCOneOf {scChoices = t} = choices opts t
 jsOneOf _ _ = []
+
+jsRequired :: A.Options -> Schema -> [(Text,A.Value)]
+jsRequired       A.Options {A.omitNothingFields = True}  SCObject {scRequired = r  } = [("required", array r)]
+jsRequired opts@(A.Options {A.omitNothingFields = _   }) SCObject {scProperties = p} = [("required", array . map fst $ toMap opts p)]
+jsRequired _ _ = []
 
 jsDefinitions :: A.Options -> Schema -> [(Text,A.Value)]
 jsDefinitions _    SCSchema {scDefinitions = []} = []
