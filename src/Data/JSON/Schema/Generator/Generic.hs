@@ -24,7 +24,8 @@ import Control.Applicative (pure)
 import Data.Monoid (mappend, mempty)
 #endif
 
-import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), GJSONSchemaGen(..), Options(..))
+import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), JSONSchemaPrim(..)
+    , GJSONSchemaGen(..), Options(..))
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
 import Data.HashMap.Strict (HashMap)
@@ -252,9 +253,6 @@ instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
 #endif
 
 --------------------------------------------------------------------------------
-
-class JSONSchemaPrim a where
-    toSchemaPrim :: Options -> Proxy a -> Schema
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} JSONSchemaPrim String where

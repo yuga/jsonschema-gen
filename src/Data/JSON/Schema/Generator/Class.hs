@@ -18,6 +18,11 @@ class JSONSchemaGen a where
     default toSchema :: (Generic a, GJSONSchemaGen (Rep a)) => Options -> Proxy a -> Schema
     toSchema = genericToSchema
 
+--------------------------------------------------------------------------------
+
+class JSONSchemaPrim a where
+    toSchemaPrim :: Options -> Proxy a -> Schema
+
 class GJSONSchemaGen f where
     gToSchema :: Options -> Proxy (f a) -> Schema
 
