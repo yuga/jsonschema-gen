@@ -239,48 +239,48 @@ class ToJSONSchemaDef f where
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toJSONSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts _  = toSchemaPrim opts (Proxy :: Proxy a)
 
 instance {-# OVERLAPPABLE #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toJSONSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts _ = toSchemaPrim opts (Proxy :: Proxy a)
 #else
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toJSONSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts _  = toSchemaPrim opts (Proxy :: Proxy a)
 
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toJSONSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts _ = toSchemaPrim opts (Proxy :: Proxy a)
 #endif
 
 class JSONSchemaPrim a where
-    toJSONSchemaPrim :: Options -> Proxy a -> Schema
+    toSchemaPrim :: Options -> Proxy a -> Schema
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} JSONSchemaPrim String where
-    toJSONSchemaPrim _ _ = scString
+    toSchemaPrim _ _ = scString
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Text where
-    toJSONSchemaPrim _ _ = scString
+    toSchemaPrim _ _ = scString
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim UTCTime where
-    toJSONSchemaPrim _ _ = scString { scFormat = Just "date-time" }
+    toSchemaPrim _ _ = scString { scFormat = Just "date-time" }
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Int where
-    toJSONSchemaPrim _ _ = scInteger
+    toSchemaPrim _ _ = scInteger
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Integer where
-    toJSONSchemaPrim _ _ = scInteger
+    toSchemaPrim _ _ = scInteger
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Float where
-    toJSONSchemaPrim _ _ = scNumber
+    toSchemaPrim _ _ = scNumber
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
-    toJSONSchemaPrim _ _ = scNumber
+    toSchemaPrim _ _ = scNumber
 
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
-    toJSONSchemaPrim _ _ = scBoolean
+    toSchemaPrim _ _ = scBoolean
 
 instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
-    toJSONSchemaPrim opts _ = SCArray
+    toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDefinitions = Nothing
         , scNullable = False
@@ -290,7 +290,7 @@ instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
         }
 
 instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
-    toJSONSchemaPrim opts _ = SCObject
+    toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
@@ -300,7 +300,7 @@ instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) whe
         }
 
 instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
-    toJSONSchemaPrim opts _ = SCObject
+    toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
@@ -310,37 +310,37 @@ instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a)
         }
 
 instance {-# OVERLAPPABLE #-} (JSONSchemaGen a) => JSONSchemaPrim a where
-    toJSONSchemaPrim opts a = SCRef
+    toSchemaPrim opts a = SCRef
         { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
         }
 #else
 instance JSONSchemaPrim String where
-    toJSONSchemaPrim _ _ = scString
+    toSchemaPrim _ _ = scString
 
 instance JSONSchemaPrim Text where
-    toJSONSchemaPrim _ _ = scString
+    toSchemaPrim _ _ = scString
 
 instance JSONSchemaPrim UTCTime where
-    toJSONSchemaPrim _ _ = scString { scFormat = Just "date-time" }
+    toSchemaPrim _ _ = scString { scFormat = Just "date-time" }
 
 instance JSONSchemaPrim Int where
-    toJSONSchemaPrim _ _ = scInteger
+    toSchemaPrim _ _ = scInteger
 
 instance JSONSchemaPrim Integer where
-    toJSONSchemaPrim _ _ = scInteger
+    toSchemaPrim _ _ = scInteger
 
 instance JSONSchemaPrim Float where
-    toJSONSchemaPrim _ _ = scNumber
+    toSchemaPrim _ _ = scNumber
 
 instance JSONSchemaPrim Double where
-    toJSONSchemaPrim _ _ = scNumber
+    toSchemaPrim _ _ = scNumber
 
 instance JSONSchemaPrim Bool where
-    toJSONSchemaPrim _ _ = scBoolean
+    toSchemaPrim _ _ = scBoolean
 
 instance (JSONSchemaGen a) => JSONSchemaPrim [a] where
-    toJSONSchemaPrim opts _ = SCArray
+    toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
@@ -350,7 +350,7 @@ instance (JSONSchemaGen a) => JSONSchemaPrim [a] where
         }
 
 instance (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
-    toJSONSchemaPrim opts _ = SCObject
+    toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
@@ -360,7 +360,7 @@ instance (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
         }
 
 instance (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
-    toJSONSchemaPrim opts _ = SCObject
+    toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
@@ -370,7 +370,7 @@ instance (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
         }
 
 instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
-    toJSONSchemaPrim opts a = SCRef
+    toSchemaPrim opts a = SCRef
         { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
         }
