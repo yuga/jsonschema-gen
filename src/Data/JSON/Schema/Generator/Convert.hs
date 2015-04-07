@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Data.JSON.Schema.Generator.Generate
+module Data.JSON.Schema.Generator.Convert
     ( convert
     ) where
 

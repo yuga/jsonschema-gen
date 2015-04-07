@@ -20,7 +20,7 @@ flag safe-aeson
 library
   exposed-modules:     Data.JSON.Schema.Generator
                        Data.JSON.Schema.Generator.Class
-                       Data.JSON.Schema.Generator.Generate
+                       Data.JSON.Schema.Generator.Convert
                        Data.JSON.Schema.Generator.Generic
                        Data.JSON.Schema.Generator.Types
 

@@ -21,7 +21,7 @@ module Data.JSON.Schema.Generator
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), GJSONSchemaGen(..), Options(..)
     , defaultOptions, genericToSchema)
-import Data.JSON.Schema.Generator.Generate (convert)
+import Data.JSON.Schema.Generator.Convert (convert)
 import Data.JSON.Schema.Generator.Generic ()
 import Data.Proxy (Proxy)
 
