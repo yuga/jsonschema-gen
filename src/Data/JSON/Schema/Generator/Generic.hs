@@ -339,7 +339,7 @@ instance JSONSchemaPrim Double where
 instance JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] where
+instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDescription = Nothing
@@ -349,7 +349,7 @@ instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] where
         , scUpperBound = Nothing
         }
 
-instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -359,7 +359,7 @@ instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
         , scRequired = []
         }
 
-instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing

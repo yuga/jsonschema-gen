@@ -13,6 +13,10 @@ data RecordType1 =
         , recordField13 :: Double
         , recordField14 :: Maybe String
         , recordField15 :: RecordType2
+        , recordField16 :: [String]
+        , recordField17 :: [Int]
+        , recordField18 :: [Int]
+        , recordField19 :: Maybe Int
         }
     deriving (Show, Generic)
 

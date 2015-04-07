@@ -24,6 +24,10 @@ recordType11 =
         { recordField21 = "field21"
         , recordField22 = Nothing
         }
+    , recordField16 = ["recordField16-1", "recordField17-2"]
+    , recordField17 = [17]
+    , recordField18 = []
+    , recordField19 = Just 19
     }
 
 recordType22 :: RecordType2
