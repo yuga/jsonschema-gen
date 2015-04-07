@@ -279,37 +279,37 @@ instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
+instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDefinitions = Nothing
         , scNullable = False
-        , scItems = [toSchema opts (Proxy :: Proxy a)]
+        , scItems = [toSchemaPrim opts (Proxy :: Proxy a)]
         , scLowerBound = Nothing
         , scUpperBound = Nothing
         }
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
         , scProperties = []
-        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scPatternProps = [(".*", toSchemaPrim opts (Proxy :: Proxy a))]
         , scRequired = []
         }
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
         , scProperties = []
-        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scPatternProps = [(".*", toSchemaPrim opts (Proxy :: Proxy a))]
         , scRequired = []
         }
 
-instance {-# OVERLAPPABLE #-} (JSONSchemaGen a) => JSONSchemaPrim a where
+instance {-# OVERLAPPABLE #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
     toSchemaPrim opts a = SCRef
         { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
         , scNullable = False
@@ -339,33 +339,33 @@ instance JSONSchemaPrim Double where
 instance JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance (JSONSchemaGen a) => JSONSchemaPrim [a] where
+instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
-        , scItems = [toSchema opts (Proxy :: Proxy a)]
+        , scItems = [toSchemaPrim opts (Proxy :: Proxy a)]
         , scLowerBound = Nothing
         , scUpperBound = Nothing
         }
 
-instance (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
         , scProperties = []
-        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scPatternProps = [(".*", toSchemaPrim opts (Proxy :: Proxy a))]
         , scRequired = []
         }
 
-instance (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
         , scNullable = False
         , scProperties = []
-        , scPatternProps = [(".*", toSchema opts (Proxy :: Proxy a))]
+        , scPatternProps = [(".*", toSchemaPrim opts (Proxy :: Proxy a))]
         , scRequired = []
         }
 
