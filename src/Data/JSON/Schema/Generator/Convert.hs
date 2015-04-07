@@ -36,6 +36,7 @@ convertToList inArray opts s = foldr1 (++) $
     , jsDescription
     , jsReference
     , jsType         inArray opts
+    , jsFormat
     , jsLowerBound
     , jsUpperBound
     , jsRequired             opts
@@ -100,6 +101,10 @@ jsType _ _ _ = []
 needsNull :: Bool -> A.Options -> Bool
 needsNull True  _    = True
 needsNull False opts = not (A.omitNothingFields opts)
+
+jsFormat :: Schema -> [(Text,A.Value)]
+jsFormat SCString {scFormat = Just f} = [("format", string f)]
+jsFormat _ = []
 
 jsLowerBound :: Schema -> [(Text,A.Value)]
 jsLowerBound SCString {scLowerBound = (Just n)} = [("minLength", number n)]
