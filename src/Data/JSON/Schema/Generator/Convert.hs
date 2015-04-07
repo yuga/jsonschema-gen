@@ -127,7 +127,8 @@ jsProperties opts SCObject {scProperties = p} = [("properties", object $ toMap o
 jsProperties _ _ = []
 
 jsPatternProps :: A.Options -> Schema -> [(Text,A.Value)]
-jsPatternProps opts SCObject {scPatternProps = p} = [("patternProperties", object $ toMap opts p)]
+jsPatternProps _    SCObject {scPatternProps = []} = []
+jsPatternProps opts SCObject {scPatternProps = p } = [("patternProperties", object $ toMap opts p)]
 jsPatternProps _ _ = []
 
 jsOneOf :: A.Options -> Schema -> [(Text,A.Value)]
