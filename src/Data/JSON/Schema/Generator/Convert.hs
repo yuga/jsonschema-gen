@@ -31,7 +31,7 @@ convertToList :: Bool -> A.Options -> Schema -> [(Text,A.Value)]
 convertToList inArray opts s = foldr1 (++) $
     [ jsId
     , jsSchema
-    , jsSimpleType           opts
+    , jsSchemaType           opts
     , jsTitle
     , jsDescription
     , jsReference
@@ -58,9 +58,9 @@ jsSchema :: Schema -> [(Text,A.Value)]
 jsSchema SCSchema {scUsedSchema = s} = [("$schema", string s)]
 jsSchema _ = []
 
-jsSimpleType :: A.Options -> Schema -> [(Text,A.Value)]
-jsSimpleType opts SCSchema {scSimpleType = s} = convertToList False opts s
-jsSimpleType _ _ = []
+jsSchemaType :: A.Options -> Schema -> [(Text,A.Value)]
+jsSchemaType opts SCSchema {scSchemaType = s} = convertToList False opts s
+jsSchemaType _ _ = []
 
 jsTitle :: Schema -> [(Text,A.Value)]
 jsTitle SCConst  {scTitle = "" } = []

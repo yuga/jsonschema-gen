@@ -17,7 +17,7 @@ data Schema =
       SCSchema
         { scId           :: !Text
         , scUsedSchema   :: !Text
-        , scSimpleType   :: !Schema
+        , scSchemaType   :: !Schema
         , scDefinitions  :: ![(Text, Schema)]
         }
     | SCString
