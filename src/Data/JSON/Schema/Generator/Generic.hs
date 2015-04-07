@@ -276,17 +276,17 @@ instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
+instance {-# OVERLAPS #-} (JSONSchemaPrim a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
-        , scDefinitions = Nothing
+        , scDescription = Nothing
         , scNullable = False
         , scItems = [toSchemaPrim opts (Proxy :: Proxy a)]
         , scLowerBound = Nothing
         , scUpperBound = Nothing
         }
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+instance {-# OVERLAPS #-} (JSONSchemaPrim a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -296,7 +296,7 @@ instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) whe
         , scRequired = []
         }
 
-instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+instance {-# OVERLAPS #-} (JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -336,7 +336,7 @@ instance JSONSchemaPrim Double where
 instance JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim [a] where
+instance (JSONSchemaPrim a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDescription = Nothing
@@ -346,7 +346,7 @@ instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim [a] where
         , scUpperBound = Nothing
         }
 
-instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim (Map String a) where
+instance (JSONSchemaPrim a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -356,7 +356,7 @@ instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim (Map String a) where
         , scRequired = []
         }
 
-instance (Typeable a, JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a) where
+instance (JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -372,6 +372,8 @@ instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
         , scNullable = False
         }
 #endif
+
+--------------------------------------------------------------------------------
 
 class IsNullable f where
     isNullable :: Proxy (f a) -> Bool
