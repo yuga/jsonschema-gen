@@ -276,7 +276,7 @@ instance {-# OVERLAPPING #-} JSONSchemaPrim Double where
 instance {-# OVERLAPPING #-} JSONSchemaPrim Bool where
     toSchemaPrim _ _ = scBoolean
 
-instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] where
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim [a] where
     toSchemaPrim opts _ = SCArray
         { scTitle = ""
         , scDefinitions = Nothing
@@ -286,7 +286,7 @@ instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim [a] wh
         , scUpperBound = Nothing
         }
 
-instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (Map String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
@@ -296,7 +296,7 @@ instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (Map S
         , scRequired = []
         }
 
-instance {-# OVERLAPS #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
+instance {-# OVERLAPS #-} (JSONSchemaGen a) => JSONSchemaPrim (HashMap String a) where
     toSchemaPrim opts _ = SCObject
         { scTitle = ""
         , scDescription = Nothing
