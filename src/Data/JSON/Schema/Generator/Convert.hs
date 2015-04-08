@@ -193,17 +193,20 @@ consAsEnum s = error ("conAsEnum could not handle: " ++ show s)
 
 conAsObject :: A.Options -> SchemaChoice -> A.Value
 conAsObject opts sc
-    | isArray opts = object [ ("type", "array")
-                            , ("title", string $ sctTitle sc)
-                            , ("items" , conAsObject' opts sc)
-                            , ("minItems", number 2)
-                            , ("maxItems", number 2)
-                            , ("additionalItems", false)
-                            ]
-    | otherwise    = object [ ("type", "object")
-                            , ("title", string $ sctTitle sc)
-                            , ("properties", conAsObject' opts sc)
-                            , ("additionalProperties", false)]
+    | isArray opts = object $
+        if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
+        ++ [ ("type", "array")
+           , ("items" , conAsObject' opts sc)
+           , ("minItems", number 2)
+           , ("maxItems", number 2)
+           , ("additionalItems", false)
+           ]
+    | otherwise    = object $
+        if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
+        ++ [ ("type", "object")
+           , ("properties", conAsObject' opts sc)
+           , ("additionalProperties", false)
+           ]
 
 isArray :: A.Options -> Bool
 isArray (A.sumEncoding -> A.TwoElemArray) = True
