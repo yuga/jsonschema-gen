@@ -1,5 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Data.JSON.Schema.Generator.Class where
 
@@ -38,8 +40,19 @@ data Options = Options
     { baseUri :: String -- ^ shcema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
     , refSchemaMap :: Map TypeRep String -- ^ a mapping from datatypes to schema ids.
+    , propTypeMap :: Map String (forall a. (JSONSchemaPrim a) => Proxy a)
     }
-    deriving Show
+
+instance Show Options where
+    showsPrec p opts =
+        showParen (p > 10)
+        $ showString "Options { baseUri = "
+        . showsPrec 11 (baseUri opts)
+        . showString ", schemaIdSuffix = "
+        . showsPrec 11 (schemaIdSuffix opts)
+        . showString ", refSchemaMap = "
+        . showsPrec 11 (refSchemaMap opts)
+        . showString ", propTypeMap = {..} }"
 
 -- | Default geerating 'Options':
 --
@@ -56,5 +69,6 @@ defaultOptions = Options
     { baseUri = ""
     , schemaIdSuffix = ""
     , refSchemaMap = Map.empty
+    , propTypeMap = Map.empty
     }
 
