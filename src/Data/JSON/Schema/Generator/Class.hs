@@ -1,6 +1,6 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Data.JSON.Schema.Generator.Class where
@@ -40,8 +40,10 @@ data Options = Options
     { baseUri :: String -- ^ shcema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
     , refSchemaMap :: Map TypeRep String -- ^ a mapping from datatypes to schema ids.
-    , propTypeMap :: Map String (forall a. (JSONSchemaPrim a) => Proxy a)
+    , propTypeMap :: Map (String) PropType -- ^ a mapping to assign a preffered type to a property.
     }
+
+data PropType = forall a. (JSONSchemaPrim a) => PropType { unPropType :: Proxy a }
 
 instance Show Options where
     showsPrec p opts =

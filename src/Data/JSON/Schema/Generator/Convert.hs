@@ -9,6 +9,7 @@ module Data.JSON.Schema.Generator.Convert
 #if MIN_VERSION_base(4,8,0)
 #else
 import Control.Applicative ((<*>))
+import Data.Monoid (mappend)
 #endif
 
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..))
@@ -195,18 +196,20 @@ conAsObject :: A.Options -> SchemaChoice -> A.Value
 conAsObject opts sc
     | isArray opts = object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
-        ++ [ ("type", "array")
-           , ("items" , conAsObject' opts sc)
-           , ("minItems", number 2)
-           , ("maxItems", number 2)
-           , ("additionalItems", false)
-           ]
+        `mappend`
+        [ ("type", "array")
+        , ("items" , conAsObject' opts sc)
+        , ("minItems", number 2)
+        , ("maxItems", number 2)
+        , ("additionalItems", false)
+        ]
     | otherwise    = object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
-        ++ [ ("type", "object")
-           , ("properties", conAsObject' opts sc)
-           , ("additionalProperties", false)
-           ]
+        `mappend`
+        [ ("type", "object")
+        , ("properties", conAsObject' opts sc)
+        , ("additionalProperties", false)
+        ]
 
 isArray :: A.Options -> Bool
 isArray (A.sumEncoding -> A.TwoElemArray) = True
