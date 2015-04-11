@@ -22,7 +22,7 @@ import Data.Monoid (mappend, mempty)
 #endif
 
 import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), JSONSchemaPrim(..)
-    , GJSONSchemaGen(..), Options(..))
+    , GJSONSchemaGen(..), Options(..), PropType(..))
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
 import Data.HashMap.Strict (HashMap)
@@ -46,11 +46,11 @@ data Env = Env
     { envModuleName   :: !String
     , envDatatypeName :: !String
     , envConName      :: !String
-    , envSelname      :: !String
+    , envSelname      :: !(Maybe String)
     }
 
 initEnv :: Env
-initEnv = Env "" "" "" ""
+initEnv = Env "" "" "" Nothing
 
 instance (Datatype d, SchemaType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
@@ -105,9 +105,9 @@ instance (RecordToPairs f) => SchemaTypeS f True where
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
         , scNullable = False
-        , scProperties = recordToPairs opts False (Proxy :: Proxy (f p))
+        , scProperties = recordToPairs opts env False (Proxy :: Proxy (f p))
         , scPatternProps = []
-        , scRequired = map fst $ recordToPairs opts True (Proxy :: Proxy (f p))
+        , scRequired = map fst $ recordToPairs opts env True (Proxy :: Proxy (f p))
         }
 
 -- Product
@@ -116,7 +116,7 @@ instance (ProductToList f) => SchemaTypeS f False where
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
         , scDescription = Nothing
         , scNullable = False
-        , scItems = productToList opts (Proxy :: Proxy (f p))
+        , scItems = productToList opts env (Proxy :: Proxy (f p))
         , scLowerBound = Nothing
         , scUpperBound = Nothing
         }
@@ -181,51 +181,54 @@ instance (RecordToPairs f) => ConToArrayOrMap f True where
     conToArrayOrMap opts env _ = Tagged SCChoiceMap
         { sctName = Text.pack $ envConName env
         , sctTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
-        , sctMap = recordToPairs opts False (Proxy :: Proxy (f p))
-        , sctRequired = map fst $ recordToPairs opts True (Proxy :: Proxy (f p))
+        , sctMap = recordToPairs opts env False (Proxy :: Proxy (f p))
+        , sctRequired = map fst $ recordToPairs opts env True (Proxy :: Proxy (f p))
         }
 
 instance (RecordToPairs f) => ConToArrayOrMap f False where
     conToArrayOrMap opts env _ = Tagged SCChoiceArray
         { sctName = Text.pack $ envConName env
         , sctTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env ++ "." ++ envConName env
-        , sctArray = map snd $ recordToPairs opts False (Proxy :: Proxy (f p))
+        , sctArray = map snd $ recordToPairs opts env False (Proxy :: Proxy (f p))
         }
 
 --------------------------------------------------------------------------------
 
 class RecordToPairs f where
-    recordToPairs :: Options -> Bool -> Proxy (f a) -> [(Text, Schema)]
+    recordToPairs :: Options -> Env -> Bool -> Proxy (f a) -> [(Text, Schema)]
 
 instance RecordToPairs U1 where
-    recordToPairs _ _ _ = mempty
+    recordToPairs _ _ _ _ = mempty
 
 instance (Selector s, IsNullable a, ToJSONSchemaDef a) => RecordToPairs (S1 s a) where
-    recordToPairs opts notMaybe _ 
+    recordToPairs opts env notMaybe _ 
         | isEmpty   = mempty
-        | otherwise = pure ( Text.pack . selName $ selector
-                           , (toJSONSchemaDef opts record) { scNullable = isNullable record })
+        | otherwise = pure ( Text.pack selname
+                           , (toJSONSchemaDef opts env' field) { scNullable = isNullable field })
       where
-        isEmpty = notMaybe && isNullable record
-        record = Proxy :: Proxy (a p)
+        isEmpty = notMaybe && isNullable field
+        field = Proxy :: Proxy (a p)
         selector = undefined :: S1 s a p
+        selname = selName selector
+        env' = env { envSelname = Just selname }
 
 instance (RecordToPairs a, RecordToPairs b) => RecordToPairs (a :*: b) where
-    recordToPairs opts notMaybe _ = recordToPairs opts notMaybe a `mappend` recordToPairs opts notMaybe b
+    recordToPairs opts env notMaybe _ =
+        recordToPairs opts env notMaybe a `mappend` recordToPairs opts env notMaybe b
       where
         a = Proxy :: Proxy (a p)
         b = Proxy :: Proxy (b p)
 
 class ProductToList f where
-    productToList :: Options -> Proxy (f a) -> [Schema]
+    productToList :: Options -> Env -> Proxy (f a) -> [Schema]
 
 instance (IsNullable a, ToJSONSchemaDef a) => ProductToList (S1 s a) where
-    productToList opts _ = pure (toJSONSchemaDef opts prod) {scNullable = isNullable prod}
+    productToList opts env _ = pure (toJSONSchemaDef opts env prod) {scNullable = isNullable prod}
       where
         prod = Proxy :: Proxy (a p)
 
 instance (ProductToList a, ProductToList b) => ProductToList (a :*: b) where
-    productToList opts _ = productToList opts a `mappend` productToList opts b
+    productToList opts env _ = productToList opts env a `mappend` productToList opts env b
       where
         a = Proxy :: Proxy (a p)
         b = Proxy :: Proxy (b p)
@@ -233,21 +236,34 @@ instance (ProductToList a, ProductToList b) => ProductToList (a :*: b) where
 --------------------------------------------------------------------------------
 
 class ToJSONSchemaDef f where
-    toJSONSchemaDef :: Options -> Proxy (f a) -> Schema
+    toJSONSchemaDef :: Options -> Env -> Proxy (f a) -> Schema
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts env _  = case propType opts env of
+        Just (PropType p) -> toSchemaPrim opts p
+        Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance {-# OVERLAPPABLE #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts env _ = case propType opts env of
+        Just (PropType p) -> toSchemaPrim opts p
+        Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #else
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts _  = toSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts env _  = case propType opts env of
+        Just (PropType p) -> toSchemaPrim opts p
+        Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts _ = toSchemaPrim opts (Proxy :: Proxy a)
+    toJSONSchemaDef opts env _ = case propType opts env of
+        Just (PropType p) -> toSchemaPrim opts p
+        Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #endif
+
+propType :: Options -> Env -> Maybe PropType
+propType opts env = do
+    selname <- envSelname env
+    Map.lookup selname $ propTypeMap opts
 
 --------------------------------------------------------------------------------
 

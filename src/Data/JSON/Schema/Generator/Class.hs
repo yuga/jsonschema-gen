@@ -43,7 +43,7 @@ data Options = Options
     , propTypeMap :: Map (String) PropType -- ^ a mapping to assign a preffered type to a property.
     }
 
-data PropType = forall a. (JSONSchemaPrim a) => PropType { unPropType :: Proxy a }
+data PropType = forall a. (JSONSchemaPrim a) => PropType (Proxy a)
 
 instance Show Options where
     showsPrec p opts =
