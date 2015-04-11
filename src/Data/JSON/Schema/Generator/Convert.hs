@@ -142,7 +142,7 @@ jsPatternProps opts SCObject {scPatternProps = p } = [("patternProperties", obje
 jsPatternProps _ _ = []
 
 jsOneOf :: A.Options -> Schema -> [(Text,A.Value)]
-jsOneOf opts SCOneOf {scChoices = t} = choices opts t
+jsOneOf opts SCOneOf {scChoices = cs, scNullable = nullable} = choices opts nullable cs
 jsOneOf _ _ = []
 
 jsRequired :: A.Options -> Schema -> [(Text,A.Value)]
@@ -174,15 +174,21 @@ false = A.Bool False
 
 --------------------------------------------------------------------------------
 
-choices :: A.Options -> [SchemaChoice] -> [(Text,A.Value)]
-choices opts cs
-    | isEnum         = [ ("enum", array $ map consAsEnum cs) ]
-    | length cs == 1 = [ ("type", "object")
-                       , ("properties", head $ map (conAsObject opts) cs)
-                       ]
-    | otherwise      = [ ("oneOf", array $ map (conAsObject opts) cs) ]
+choices :: A.Options -> Bool -> [SchemaChoice] -> [(Text,A.Value)]
+choices opts nullable cs
+    | isEnum && nullable = [ ("oneOf", array $ [object [("enum", array $ map consAsEnum cs)], object [("type", string "null")]]) ]
+    | isEnum             = [ ("enum", array $ map consAsEnum cs) ]
+    | isUnit && nullable = [ ("type", array $ map string ["object", "null"])
+                           , ("properties", head $ map (conAsObject opts) cs)
+                           ]
+    | isUnit             = [ ("type", array $ map string ["object"])
+                           , ("properties", head $ map (conAsObject opts) cs)
+                           ]
+    | nullable           = [ ("oneOf", array $ object [("type", string "null")] : map (conAsObject opts) cs) ]
+    | otherwise          = [ ("oneOf", array $ map (conAsObject opts) cs) ]
   where
     isEnum = A.allNullaryToStringTag opts && all enumerable cs
+    isUnit = length cs == 1
 
 enumerable :: SchemaChoice -> Bool
 enumerable (SCChoiceEnum _ _) = True

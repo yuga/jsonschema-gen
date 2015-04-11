@@ -129,6 +129,7 @@ instance (SumToEnum f) => SchemaTypeM f True where
     simpleTypeM _ env _ = Tagged SCOneOf
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
+        , scNullable = False
         , scChoices = sumToEnum env (Proxy :: Proxy (f p))
         }
 
@@ -137,6 +138,7 @@ instance (SumToArrayOrMap f) => SchemaTypeM f False where
     simpleTypeM opts env _ = Tagged SCOneOf
         { scTitle = Text.pack $ envModuleName env ++ "." ++ envDatatypeName env
         , scDescription = Nothing
+        , scNullable = False
         , scChoices = sumToArrayOrMap opts env (Proxy :: Proxy (f p))
         }
 

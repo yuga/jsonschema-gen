@@ -67,6 +67,7 @@ data Schema =
     | SCOneOf
         { scTitle        :: !Text
         , scDescription  :: !(Maybe Text)
+        , scNullable     :: !Bool
         , scChoices      :: ![SchemaChoice]
         }
     | SCRef
