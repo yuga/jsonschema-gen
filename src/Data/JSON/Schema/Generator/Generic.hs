@@ -13,7 +13,7 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Data.JSON.Schema.Generator.Generic where
+module Data.JSON.Schema.Generator.Generic () where
 
 #if MIN_VERSION_base(4,8,0)
 #else
