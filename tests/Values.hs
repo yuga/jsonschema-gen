@@ -28,6 +28,7 @@ recordType11 =
     , recordField17 = [17]
     , recordField18 = []
     , recordField19 = Just 19
+    , recordField1A = "UnitData21"
     }
 
 recordType22 :: RecordType2

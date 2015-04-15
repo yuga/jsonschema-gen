@@ -41,7 +41,11 @@ instance G.JSONSchemaGen RecordType2
 instance G.JSONSchemaGen ProductType1
 instance G.JSONSchemaGen ProductType2
 instance G.JSONSchemaGen UnitType1
+instance G.JSONSchemaGen UnitType2
 instance G.JSONSchemaGen MixType1
+
+--instance G.JSONSchemaPrim UnitType2 where
+--    toSchemaPrim opts _ = G.scSchemaType . G.toSchema opts $ (Proxy :: Proxy UnitType2)
 
 --
 -- TestData
@@ -53,18 +57,21 @@ data TestDatum =
                      , tdValue :: a
                      }
 
+testDatum :: (Generic a, A.GToJSON (Rep a), SchemaName (Rep a)) => String -> a -> TestDatum
+testDatum name p = TestDatum name p
+
 testData :: [TestDatum]
 testData =
     [ TestDatum "recordData11"  recordType11
-    , TestDatum "recordData12"  recordType22
-    , TestDatum "productData11" productData11
-    , TestDatum "productData12" productData12
-    , TestDatum "unitData1"     unitData1
-    , TestDatum "unitData2"     unitData2
-    , TestDatum "unitData3"     unitData3
-    , TestDatum "mixData11"     mixData11
-    , TestDatum "mixData12"     mixData12
-    , TestDatum "mixData13"     mixData13
+    , testDatum "recordData12"  recordType22
+    , testDatum "productData11" productData11
+    , testDatum "productData12" productData12
+    , testDatum "unitData1"     unitData1
+    , testDatum "unitData2"     unitData2
+    , testDatum "unitData3"     unitData3
+    , testDatum "mixData11"     mixData11
+    , testDatum "mixData12"     mixData12
+    , testDatum "mixData13"     mixData13
     ]
 
 --
@@ -138,16 +145,29 @@ printValueAsJsonInPython path = do
 -- Print type definitions as schema in individualy json files
 --
 
-printTypeAsSchema :: (Generic a, G.JSONSchemaGen a, SchemaName (Rep a)) => FilePath -> [A.Options] -> Proxy a -> IO ()
-printTypeAsSchema dir opts a = do
-    forM_ opts $ \opt -> do
+printTypeAsSchema :: (Generic a, G.JSONSchemaGen a, SchemaName (Rep a))
+                  => FilePath -> G.Options -> [A.Options] -> Proxy a -> IO ()
+printTypeAsSchema dir opts aoptss a = do
+    forM_ aoptss $ \aopts -> do
         let fa = fmap from a
-        let filename = schemaName opt fa
-        let suffix = "." ++ schemaSuffix opt fa
+        let filename = schemaName opts aopts fa
+        let suffix = "." ++ schemaSuffix opts aopts fa
         let path = dir ++ "/" ++ filename
-        let schemaOptions' = schemaOptions { G.schemaIdSuffix = suffix }
+        let opts' = opts { G.schemaIdSuffix = suffix }
         withFile path WriteMode $ \h -> do
-            BL.hPutStrLn h $ G.generate' schemaOptions' opt a
+            BL.hPutStrLn h $ G.generate' opts' aopts a
+
+class SchemaName f where
+    schemaName :: G.Options -> A.Options -> Proxy (f a) -> FilePath
+    schemaSuffix :: G.Options -> A.Options -> Proxy (f a) -> String
+
+instance (Datatype d) => SchemaName (D1 d f) where
+    schemaName opts aopts p = modName ++ "." ++ typName ++ "." ++ schemaSuffix opts aopts p
+      where
+        modName = moduleName (undefined :: D1 d f p)
+        typName = datatypeName (undefined :: D1 d f p)
+    schemaSuffix opts A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } _ =
+        show a ++ "." ++ show b ++ "." ++ showC c ++ G.schemaIdSuffix opts
 
 schemaOptions :: G.Options
 schemaOptions = G.defaultOptions
@@ -159,43 +179,42 @@ schemaOptions = G.defaultOptions
         ]
     }
 
-class SchemaName f where
-    schemaName :: A.Options -> Proxy (f a) -> FilePath
-    schemaSuffix :: A.Options -> Proxy (f a) -> String
-
-instance (Datatype d) => SchemaName (D1 d f) where
-    schemaName opt p = modName ++ "." ++ typName ++ "." ++ schemaSuffix opt p
-      where
-        modName = moduleName (undefined :: D1 d f p)
-        typName = datatypeName (undefined :: D1 d f p)
-    schemaSuffix A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } _ =
-        show a ++ "." ++ show b ++ "." ++ showC c ++ G.schemaIdSuffix schemaOptions
+schemaOptions' :: G.Options
+schemaOptions'= schemaOptions
+    { G.refSchemaMap = fromList
+        [ (typeOf (undefined :: RecordType2),  "https://github.com/yuga/jsonschema-gen/tests/Types.RecordType2.True.False.tag.json")
+        , (typeOf (undefined :: ProductType2), "https://github.com/yuga/jsonschema-gen/tests/Types.ProductType2.True.False.tag.json")
+        , (typeOf (undefined :: UnitType2),    "https://github.com/yuga/jsonschema-gen/tests/Types.UnitType2.True.False.tag.json")
+        ]
+    , G.propTypeMap = fromList  [("recordField1A", G.PropType (Proxy :: Proxy UnitType2))]
+    }
 
 printTypeAsSchemaInJson :: FilePath -> IO ()
 printTypeAsSchemaInJson dir = do
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy RecordType1)
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy RecordType2)
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy ProductType1)
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy ProductType2)
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy UnitType1)
-    printTypeAsSchema dir optPatterns (Proxy :: Proxy MixType1)
+    printTypeAsSchema dir schemaOptions' optPatterns (Proxy :: Proxy RecordType1)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy RecordType2)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy ProductType1)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy ProductType2)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy UnitType1)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy UnitType2)
+    printTypeAsSchema dir schemaOptions  optPatterns (Proxy :: Proxy MixType1)
 
 --
 -- Print jsonschema validator in python
 --
 
-convertToPythonLoadingSchema :: (Generic a, SchemaName (Rep a)) => [A.Options] -> Proxy a -> ([String], [String])
-convertToPythonLoadingSchema opts a =
+convertToPythonLoadingSchema :: (Generic a, SchemaName (Rep a)) => G.Options -> [A.Options] -> Proxy a -> ([String], [String])
+convertToPythonLoadingSchema opts aoptss a =
     let fa = fmap from a
-        toLoader opt =
-            let filename = schemaName opt fa
+        toLoader aopts =
+            let filename = schemaName opts aopts fa
                 symbol = "schema_" ++ map dotToLowline filename
             in (symbol ++ " = json.load(codecs.open(schemaPath + '" ++ filename ++ "', 'r', 'utf-8'))")
-        toStore opt =
-            let filename = schemaName opt fa
+        toStore aopts =
+            let filename = schemaName opts aopts fa
                 symbol = "schema_" ++ map dotToLowline filename
-            in ("'" ++ G.baseUri schemaOptions ++ filename ++ "' : " ++ symbol)
-    in (map toLoader &&& map toStore) opts
+            in ("'" ++ G.baseUri opts ++ filename ++ "' : " ++ symbol)
+    in (map toLoader &&& map toStore) aoptss
 
 dotToLowline :: Char -> Char
 dotToLowline '.' = '_'
@@ -203,12 +222,13 @@ dotToLowline c   = c
 
 printLoadSchemas :: Handle -> IO ()
 printLoadSchemas h = do
-    let (loader, store) = convertToPythonLoadingSchema optPatterns (Proxy :: Proxy RecordType1)
-                       <> convertToPythonLoadingSchema optPatterns (Proxy :: Proxy RecordType2)
-                       <> convertToPythonLoadingSchema optPatterns (Proxy :: Proxy ProductType1)
-                       <> convertToPythonLoadingSchema optPatterns (Proxy :: Proxy ProductType2)
-                       <> convertToPythonLoadingSchema optPatterns (Proxy :: Proxy UnitType1)
-                       <> convertToPythonLoadingSchema optPatterns (Proxy :: Proxy MixType1)
+    let (loader, store) = convertToPythonLoadingSchema schemaOptions' optPatterns (Proxy :: Proxy RecordType1)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy RecordType2)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy ProductType1)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy ProductType2)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy UnitType1)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy UnitType2)
+                       <> convertToPythonLoadingSchema schemaOptions  optPatterns (Proxy :: Proxy MixType1)
     hPutStrLn h "schemaPath = os.path.dirname(os.path.realpath(__file__)) + '/'"
     mapM_ (hPutStrLn h) loader
     hPutStrLn h ""
@@ -220,15 +240,15 @@ printLoadSchemas h = do
     endofmap = "            }"
 
 printValidate :: Handle -> [A.Options] -> IO ()
-printValidate h opts = do
+printValidate h aoptss = do
     hPutStrLn h "def mkValidator(schema):"
     hPutStrLn h "    resolver = jsonschema.RefResolver(schema[u'id'], schema, store=selfStore)"
     hPutStrLn h "    validator = jsonschema.Draft4Validator(schema, resolver=resolver)"
     hPutStrLn h "    return validator"
     hPutStrLn h ""
     forM_ testData $ \(TestDatum name value) ->
-        forM_ (pairsOptSymbol opts name) . uncurry $ \opt dataSymbol -> do
-            let schemaFilename = schemaName opt (fmap from . pure $ value)
+        forM_ (pairsOptSymbol aoptss name) . uncurry $ \aopts dataSymbol -> do
+            let schemaFilename = schemaName schemaOptions aopts (fmap from . pure $ value)
             let schemaSymbol  = map dotToLowline schemaFilename
             hPutStrLn h $ "mkValidator(" ++ "schema_" ++ schemaSymbol ++ ").validate(jsondata." ++ dataSymbol ++ ")"
 

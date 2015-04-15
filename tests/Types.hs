@@ -17,6 +17,7 @@ data RecordType1 =
         , recordField17 :: [Int]
         , recordField18 :: [Int]
         , recordField19 :: Maybe Int
+        , recordField1A :: String
         }
     deriving (Show, Generic)
 
@@ -40,7 +41,10 @@ data ProductType2 = ProductData21 String (Maybe String)
     deriving (Show, Generic, Typeable)
 
 data UnitType1 = UnitData1 | UnitData2 | UnitData3
-    deriving (Show, Generic)
+    deriving (Show, Generic, Typeable)
+
+data UnitType2 = UnitData21 | UnitData22 | UnitData23
+    deriving (Show, Generic, Typeable)
 
 data MixType1 =
       MixData11
