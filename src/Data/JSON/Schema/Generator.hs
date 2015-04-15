@@ -1,5 +1,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- |
+-- Module:     Data.JSON.Schema.Generator
+-- Copyright:  (c) 2015 Shohei Murayama
+-- License:    BSD3
+-- Maintainer: Shohei Murayama <shohei.murayama@gmail.com>
+-- Stability:  experimental
+--
+-- A generator for JSON Schemas from ADT.
+--
 module Data.JSON.Schema.Generator
     (
     -- * How to use this library
@@ -10,18 +19,18 @@ module Data.JSON.Schema.Generator
     , generate, generate'
 
     -- * Type conversion
-    , JSONSchemaGen(..)
-    , JSONSchemaPrim(..)
+    , JSONSchemaGen(toSchema)
+    , JSONSchemaPrim(toSchemaPrim)
     , convert
 
     -- * Generic Schema class
-    , GJSONSchemaGen(..)
+    , GJSONSchemaGen(gToSchema)
     , genericToSchema
     ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), JSONSchemaPrim(..)
-    , GJSONSchemaGen(..), Options(..), PropType(..), defaultOptions, genericToSchema)
+import Data.JSON.Schema.Generator.Class (JSONSchemaGen(toSchema), JSONSchemaPrim(toSchemaPrim)
+    , GJSONSchemaGen(gToSchema), Options(..), PropType(..), defaultOptions, genericToSchema)
 import Data.JSON.Schema.Generator.Convert (convert)
 import Data.JSON.Schema.Generator.Generic ()
 import Data.Proxy (Proxy)
@@ -37,7 +46,7 @@ generate :: JSONSchemaGen a
          -> ByteString
 generate = A.encode . convert A.defaultOptions . toSchema defaultOptions
 
--- | Generate a JSON Schema form a proxy vaulue of a type.
+-- | Generate a JSON Schema from a proxy vaulue of a type.
 -- This uses the specified options to generate schema in json format.
 --
 generate' :: JSONSchemaGen a
@@ -48,6 +57,7 @@ generate' :: JSONSchemaGen a
 generate' opts aopts = A.encode . convert aopts . toSchema opts
 
 -- $use
+-- Example:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
 -- >

@@ -39,7 +39,7 @@ data Options = Options
     { baseUri :: String -- ^ shcema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
     , typeRefMap :: Map TypeRep String -- ^ a mapping from datatypes to referenced schema ids.
-    , fieldTypeMap :: Map String PropType -- ^ a mapping to assign a preffered type to a property.
+    , fieldTypeMap :: Map String PropType -- ^ a mapping to assign a preffered type to a field.
     }
 
 data PropType = forall a. (JSONSchemaPrim a) => PropType (Proxy a)
