@@ -38,8 +38,8 @@ genericToSchema opts = gToSchema opts . fmap from
 data Options = Options
     { baseUri :: String -- ^ shcema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
-    , refSchemaMap :: Map TypeRep String -- ^ a mapping from datatypes to schema ids.
-    , propTypeMap :: Map String PropType -- ^ a mapping to assign a preffered type to a property.
+    , typeRefMap :: Map TypeRep String -- ^ a mapping from datatypes to referenced schema ids.
+    , fieldTypeMap :: Map String PropType -- ^ a mapping to assign a preffered type to a property.
     }
 
 data PropType = forall a. (JSONSchemaPrim a) => PropType (Proxy a)
@@ -51,9 +51,9 @@ instance Show Options where
         . showsPrec 11 (baseUri opts)
         . showString ", schemaIdSuffix = "
         . showsPrec 11 (schemaIdSuffix opts)
-        . showString ", refSchemaMap = "
-        . showsPrec 11 (refSchemaMap opts)
-        . showString ", propTypeMap = {..} }"
+        . showString ", typeRefMap = "
+        . showsPrec 11 (typeRefMap opts)
+        . showString ", fieldTypeMap = {..} }"
 
 -- | Default geerating 'Options':
 --
@@ -69,7 +69,7 @@ defaultOptions :: Options
 defaultOptions = Options
     { baseUri = ""
     , schemaIdSuffix = ""
-    , refSchemaMap = Map.empty
-    , propTypeMap = Map.empty
+    , typeRefMap = Map.empty
+    , fieldTypeMap = Map.empty
     }
 

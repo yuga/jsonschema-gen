@@ -173,7 +173,7 @@ schemaOptions :: G.Options
 schemaOptions = G.defaultOptions
     { G.baseUri = "https://github.com/yuga/jsonschema-gen/tests/"
     , G.schemaIdSuffix = ".json"
-    , G.refSchemaMap = fromList
+    , G.typeRefMap = fromList
         [ (typeOf (undefined :: RecordType2),  "https://github.com/yuga/jsonschema-gen/tests/Types.RecordType2.True.False.tag.json")
         , (typeOf (undefined :: ProductType2), "https://github.com/yuga/jsonschema-gen/tests/Types.ProductType2.True.False.tag.json")
         ]
@@ -181,12 +181,12 @@ schemaOptions = G.defaultOptions
 
 schemaOptions' :: G.Options
 schemaOptions'= schemaOptions
-    { G.refSchemaMap = fromList
+    { G.typeRefMap = fromList
         [ (typeOf (undefined :: RecordType2),  "https://github.com/yuga/jsonschema-gen/tests/Types.RecordType2.True.False.tag.json")
         , (typeOf (undefined :: ProductType2), "https://github.com/yuga/jsonschema-gen/tests/Types.ProductType2.True.False.tag.json")
         , (typeOf (undefined :: UnitType2),    "https://github.com/yuga/jsonschema-gen/tests/Types.UnitType2.True.False.tag.json")
         ]
-    , G.propTypeMap = fromList  [("recordField1A", G.PropType (Proxy :: Proxy UnitType2))]
+    , G.fieldTypeMap = fromList  [("recordField1A", G.PropType (Proxy :: Proxy UnitType2))]
     }
 
 printTypeAsSchemaInJson :: FilePath -> IO ()

@@ -265,7 +265,7 @@ instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
 propType :: Options -> Env -> Maybe PropType
 propType opts env = do
     selname <- envSelname env
-    Map.lookup selname $ propTypeMap opts
+    Map.lookup selname $ fieldTypeMap opts
 
 --------------------------------------------------------------------------------
 
@@ -386,7 +386,7 @@ instance (JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a) where
 
 instance (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
     toSchemaPrim opts a = SCRef
-        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
+        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (typeRefMap opts)
         , scNullable = False
         }
 #endif
