@@ -326,7 +326,7 @@ instance {-# OVERLAPS #-} (JSONSchemaPrim a) => JSONSchemaPrim (HashMap String a
 
 instance {-# OVERLAPPABLE #-} (Typeable a, JSONSchemaGen a) => JSONSchemaPrim a where
     toSchemaPrim opts a = SCRef
-        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (refSchemaMap opts)
+        { scReference = maybe (scId $ toSchema opts a) Text.pack $ Map.lookup (typeOf (undefined :: a)) (typeRefMap opts)
         , scNullable = False
         }
 #else
