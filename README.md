@@ -18,6 +18,8 @@ Tests
 
 ```bash
 pip install jsonschema
+cabal sandbox init
+cabal install --only-dependencies
 cabal configure --enable-tests
 cabal build
 cabal test
