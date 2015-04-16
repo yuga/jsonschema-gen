@@ -15,7 +15,7 @@ module Data.JSON.Schema.Generator
     -- $use
 
     -- * Genenerating JSON Schema
-      Options(..), PropType(..), defaultOptions
+      Options(..), FieldType(..), defaultOptions
     , generate, generate'
 
     -- * Type conversion
@@ -30,7 +30,7 @@ module Data.JSON.Schema.Generator
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.JSON.Schema.Generator.Class (JSONSchemaGen(toSchema), JSONSchemaPrim(toSchemaPrim)
-    , GJSONSchemaGen(gToSchema), Options(..), PropType(..), defaultOptions, genericToSchema)
+    , GJSONSchemaGen(gToSchema), Options(..), FieldType(..), defaultOptions, genericToSchema)
 import Data.JSON.Schema.Generator.Convert (convert)
 import Data.JSON.Schema.Generator.Generic ()
 import Data.Proxy (Proxy)

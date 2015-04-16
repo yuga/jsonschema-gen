@@ -186,7 +186,7 @@ schemaOptions'= schemaOptions
         , (typeOf (undefined :: ProductType2), "https://github.com/yuga/jsonschema-gen/tests/Types.ProductType2.True.False.tag.json")
         , (typeOf (undefined :: UnitType2),    "https://github.com/yuga/jsonschema-gen/tests/Types.UnitType2.True.False.tag.json")
         ]
-    , G.fieldTypeMap = fromList  [("recordField1A", G.PropType (Proxy :: Proxy UnitType2))]
+    , G.fieldTypeMap = fromList  [("recordField1A", G.FieldType (Proxy :: Proxy UnitType2))]
     }
 
 printTypeAsSchemaInJson :: FilePath -> IO ()

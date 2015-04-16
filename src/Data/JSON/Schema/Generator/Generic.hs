@@ -22,7 +22,7 @@ import Data.Monoid (mappend, mempty)
 #endif
 
 import Data.JSON.Schema.Generator.Class (JSONSchemaGen(..), JSONSchemaPrim(..)
-    , GJSONSchemaGen(..), Options(..), PropType(..))
+    , GJSONSchemaGen(..), Options(..), FieldType(..))
 import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..)
     , scBoolean, scInteger, scNumber, scString)
 import Data.HashMap.Strict (HashMap)
@@ -243,26 +243,26 @@ class ToJSONSchemaDef f where
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
     toJSONSchemaDef opts env _  = case fieldType opts env of
-        Just (PropType p) -> toSchemaPrim opts p
+        Just (FieldType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance {-# OVERLAPPABLE #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
     toJSONSchemaDef opts env _ = case fieldType opts env of
-        Just (PropType p) -> toSchemaPrim opts p
+        Just (FieldType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #else
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
     toJSONSchemaDef opts env _  = case fieldType opts env of
-        Just (PropType p) -> toSchemaPrim opts p
+        Just (FieldType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
     toJSONSchemaDef opts env _ = case fieldType opts env of
-        Just (PropType p) -> toSchemaPrim opts p
+        Just (FieldType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #endif
 
-fieldType :: Options -> Env -> Maybe PropType
+fieldType :: Options -> Env -> Maybe FieldType
 fieldType opts env = do
     selname <- envSelname env
     Map.lookup selname $ fieldTypeMap opts
