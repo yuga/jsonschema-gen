@@ -242,28 +242,28 @@ class ToJSONSchemaDef f where
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# OVERLAPPING #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts env _  = case propType opts env of
+    toJSONSchemaDef opts env _  = case fieldType opts env of
         Just (PropType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance {-# OVERLAPPABLE #-} (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts env _ = case propType opts env of
+    toJSONSchemaDef opts env _ = case fieldType opts env of
         Just (PropType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #else
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i (Maybe a)) where
-    toJSONSchemaDef opts env _  = case propType opts env of
+    toJSONSchemaDef opts env _  = case fieldType opts env of
         Just (PropType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 
 instance (JSONSchemaPrim a) => ToJSONSchemaDef (K1 i a) where
-    toJSONSchemaDef opts env _ = case propType opts env of
+    toJSONSchemaDef opts env _ = case fieldType opts env of
         Just (PropType p) -> toSchemaPrim opts p
         Nothing -> toSchemaPrim opts (Proxy :: Proxy a)
 #endif
 
-propType :: Options -> Env -> Maybe PropType
-propType opts env = do
+fieldType :: Options -> Env -> Maybe PropType
+fieldType opts env = do
     selname <- envSelname env
     Map.lookup selname $ fieldTypeMap opts
 
