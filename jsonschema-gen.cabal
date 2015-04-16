@@ -1,5 +1,5 @@
 name:                jsonschema-gen
-version:             0.1.0.1
+version:             0.2.0.0
 synopsis:            JSON Schema generator from Algebraic data type
 description:         This library contains a JSON Schema generator.
 homepage:            https://github.com/yuga/jsonschema-gen
