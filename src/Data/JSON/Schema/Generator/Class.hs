@@ -36,7 +36,7 @@ genericToSchema opts = gToSchema opts . fmap from
 -- from your datatype.
 --
 data Options = Options
-    { baseUri :: String -- ^ shcema id prefix.
+    { baseUri :: String -- ^ schema id prefix.
     , schemaIdSuffix :: String -- ^ schema id suffix. File extension for example.
     , typeRefMap :: Map TypeRep String -- ^ a mapping from datatypes to referenced schema ids.
     , fieldTypeMap :: Map String PropType -- ^ a mapping to assign a preffered type to a field.
