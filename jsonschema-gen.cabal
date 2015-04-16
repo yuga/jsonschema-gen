@@ -55,6 +55,7 @@ test-suite test
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
   other-modules:       Types
+                       Values
   build-depends:       base >=4.6 && <4.9
                      , aeson
                      , bytestring
