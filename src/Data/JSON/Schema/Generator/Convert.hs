@@ -199,8 +199,8 @@ consAsEnum (SCChoiceEnum tag _) = tag
 consAsEnum s = error ("conAsEnum could not handle: " ++ show s)
 
 conAsObject :: A.Options -> SchemaChoice -> A.Value
-conAsObject opts sc
-    | isArray opts = object $
+conAsObject opts@(A.Options {A.sumEncoding = A.TwoElemArray}) sc =
+    object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
         `mappend`
         [ ("type", "array")
@@ -209,17 +209,14 @@ conAsObject opts sc
         , ("maxItems", number 2)
         , ("additionalItems", false)
         ]
-    | otherwise    = object $
+conAsObject opts sc =
+    object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
         `mappend`
         [ ("type", "object")
         , ("properties", conAsObject' opts sc)
         , ("additionalProperties", false)
         ]
-
-isArray :: A.Options -> Bool
-isArray (A.sumEncoding -> A.TwoElemArray) = True
-isArray _ = False
 
 conAsObject' :: A.Options -> SchemaChoice -> A.Value
 conAsObject' opts@(A.Options {A.sumEncoding = A.TaggedObject tFld cFld}) sc = conAsTag   opts (pack tFld) (pack cFld) sc
@@ -262,5 +259,5 @@ conToObject opts mp rq = object
     required A.Options {A.omitNothingFields = _   } = array . map fst $ toMap opts mp
 
 toMap :: A.Options -> [(Text,Schema)] -> [(Text,A.Value)]
-toMap opts mp = map (\(n,v) -> (n,convert' False opts v)) mp -- ++ [("additionalProperties", false)]
+toMap opts mp = map (\(n,v) -> (n,convert' False opts v)) mp
 
