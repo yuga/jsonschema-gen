@@ -11,7 +11,8 @@ copyright:           (c) 2015 Shohei Murayama <shohei.murayama@gmail.com>
 category:            Text, Data, JSON
 build-type:          Simple
 cabal-version:       >=1.10
--- extra-source-files:  
+
+extra-source-files:    changelog.md
 
 flag safe-aeson
   description: To avoid the issue of prior to aeson-0.7.0.6, set this flag True.
