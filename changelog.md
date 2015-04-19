@@ -1,6 +1,7 @@
 0.3.0.0
 
 * Add version constraints to dependent packages.
+* Remove dendency to transformers in test program.
 
 0.2.0.0
 

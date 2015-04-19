@@ -12,8 +12,7 @@ module Main where
 
 import Control.Applicative ((<*>), pure)
 import Control.Arrow ((&&&))
-import Control.Monad (forM, forM_)
-import Control.Monad.Trans.State
+import Control.Monad (forM_)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.TH as A
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -117,11 +116,10 @@ showC A.ObjectWithSingleField = "object"
 showC _ = "tag"
 
 pairsOptSymbol :: [A.Options] -> String -> [(A.Options, String)]
-pairsOptSymbol opts name =
-    fst . flip runState (0 :: Int) $ forM opts $ \opt -> do
-        n <- fmap (+ 1) get
-        put $! n
-        return (opt, name ++ "_" ++ show n)
+pairsOptSymbol opts name = go opts (1 :: Int)
+  where
+    go []          _ = []
+    go (opt:opts') n = (opt, name ++ "_" ++ show n) : go opts' (n + 1)
 
 printValueAsJson :: (Generic a, A.GToJSON (Rep a)) => Handle -> [A.Options] -> String -> a -> IO ()
 printValueAsJson h opts name value =
