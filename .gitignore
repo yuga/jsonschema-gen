@@ -1,6 +1,7 @@
 *.swp
-dist
 .cabal-sandbox
+.debian-build
+dist
 cabal.sandbox.config
 tests/*.json
 tests/*.py
