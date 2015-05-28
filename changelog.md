@@ -1,3 +1,7 @@
+0.3.0.1
+
+* Allow `aeson-0.9.*`
+
 0.3.0.0
 
 * Add version constraints to dependent packages.
