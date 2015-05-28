@@ -36,11 +36,11 @@ library
 
   if flag(safe-aeson)
     build-depends:
-                       aeson >=0.7.0.6 && <0.9
+                       aeson >=0.7.0.6 && <0.10
                      , scientific >=0.3.2.0 && <0.4
   else
     build-depends:
-                       aeson >=0.7 && <0.9
+                       aeson >=0.7 && <0.10
                      , scientific >=0.2 && <0.4
 
   hs-source-dirs:      src
@@ -57,7 +57,7 @@ test-suite test
   other-modules:       Types
                        Values
   build-depends:       base >=4.6 && <4.9
-                     , aeson >=0.7 && <0.9
+                     , aeson >=0.7 && <0.10
                      , bytestring >=0.10 && <0.11
                      , containers >=0.5 && <0.6
                      , jsonschema-gen
