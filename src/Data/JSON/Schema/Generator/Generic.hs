@@ -1,7 +1,10 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -9,6 +12,10 @@
 
 #if __GLASGOW_HASKELL__ < 710
 {-# LANGUAGE OverlappingInstances #-}
+#endif
+
+#if __GLASGOW_HASKELL__ >= 800
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 #endif
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -36,7 +43,11 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import GHC.Generics (
       Datatype(datatypeName, moduleName), Constructor(conName), Selector(selName)
+#if MIN_VERSION_base(4,9,0)
+    , Meta(MetaSel)
+#else
     , NoSelector
+#endif
     , C1, D1, K1, M1(unM1), S1, U1, (:+:), (:*:)
     , S)
 
@@ -51,6 +62,7 @@ data Env = Env
 
 initEnv :: Env
 initEnv = Env "" "" "" Nothing
+
 
 instance (Datatype d, SchemaType f) => GJSONSchemaGen (D1 d f) where
     gToSchema opts pd = SCSchema
@@ -416,7 +428,11 @@ class IsRecord (f :: * -> *) isRecord | f -> isRecord
 
 #if __GLASGOW_HASKELL__ >= 710
 instance (IsRecord f isRecord) => IsRecord (f :*: g) isRecord
+#if MIN_VERSION_base(4,9,0)
+instance {-# OVERLAPPING #-} IsRecord (M1 S ('MetaSel 'Nothing u ss ds) f) False
+#else
 instance {-# OVERLAPPING #-} IsRecord (M1 S NoSelector f) False
+#endif
 instance {-# OVERLAPPABLE #-} (IsRecord f isRecord) => IsRecord (M1 S c f) isRecord
 instance IsRecord (K1 i c) True
 instance IsRecord U1 False

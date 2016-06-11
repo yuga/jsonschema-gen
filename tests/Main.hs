@@ -1,11 +1,15 @@
 {-# LANGUAGE CPP #-}
+
+#if __GLASGOW_HASKELL__ < 800
 {-# LANGUAGE DeriveGeneric #-}
+#endif
+
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+--{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Main where
@@ -25,8 +29,8 @@ import Data.Typeable (typeOf)
 import GHC.Generics
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 import System.IO (Handle, IOMode(WriteMode), hClose, hPutStr, hPutStrLn, withFile)
-import System.Process (CreateProcess(..), CmdSpec(RawCommand), StdStream(CreatePipe, Inherit)
-    , createProcess, system, waitForProcess)
+import System.Process (CreateProcess(delegate_ctlc, std_in), StdStream(CreatePipe)
+    , createProcess, proc, system, waitForProcess)
 
 import Types
 import Values
@@ -269,20 +273,8 @@ printValidatorInPython path = do
 --
 
 pythonProcess :: FilePath -> CreateProcess
-pythonProcess dir =
-    CreateProcess
-        { cmdspec       = RawCommand "python" [dir ++ "/jsonvalidator.py"]
-        , cwd           = Nothing
-        , env           = Nothing
-        , std_in        = CreatePipe
-        , std_out       = Inherit
-        , std_err       = Inherit
-        , close_fds     = False
-        , create_group  = False
-#if MIN_VERSION_process(1,2,0)
-        , delegate_ctlc = True
-#endif
-        }
+pythonProcess dir = (proc "python" [dir ++ "/jsonvalidator.py"])
+    { std_in = CreatePipe, delegate_ctlc = True }
 
 runTest :: FilePath -> IO ()
 runTest dir = do
