@@ -1,15 +1,9 @@
 {-# LANGUAGE CPP #-}
-
-#if __GLASGOW_HASKELL__ < 800
-{-# LANGUAGE DeriveGeneric #-}
-#endif
-
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
---{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Main where
@@ -29,7 +23,7 @@ import Data.Typeable (typeOf)
 import GHC.Generics
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 import System.IO (Handle, IOMode(WriteMode), hClose, hPutStr, hPutStrLn, withFile)
-import System.Process (CreateProcess(delegate_ctlc, std_in), StdStream(CreatePipe)
+import System.Process (CreateProcess(..), StdStream(CreatePipe)
     , createProcess, proc, system, waitForProcess)
 
 import Types
@@ -61,7 +55,7 @@ data TestDatum =
                      }
 
 testDatum :: (Generic a, A.GToJSON (Rep a), SchemaName (Rep a)) => String -> a -> TestDatum
-testDatum name p = TestDatum name p
+testDatum = TestDatum
 
 testData :: [TestDatum]
 testData =
@@ -135,7 +129,7 @@ printValueAsJson h opts name value =
         hPutStrLn  h ""
 
 printValueAsJsonInPython :: FilePath -> IO ()
-printValueAsJsonInPython path = do
+printValueAsJsonInPython path =
     withFile path WriteMode $ \h -> do
         hPutStrLn h "# -*- coding: utf-8 -*-"
         hPutStrLn h "import json"
@@ -149,14 +143,14 @@ printValueAsJsonInPython path = do
 
 printTypeAsSchema :: (Generic a, G.JSONSchemaGen a, SchemaName (Rep a))
                   => FilePath -> G.Options -> [A.Options] -> Proxy a -> IO ()
-printTypeAsSchema dir opts aoptss a = do
+printTypeAsSchema dir opts aoptss a =
     forM_ aoptss $ \aopts -> do
         let fa = fmap from a
         let filename = schemaName opts aopts fa
         let suffix = "." ++ schemaSuffix opts aopts fa
         let path = dir ++ "/" ++ filename
         let opts' = opts { G.schemaIdSuffix = suffix }
-        withFile path WriteMode $ \h -> do
+        withFile path WriteMode $ \h ->
             BL.hPutStrLn h $ G.generate' opts' aopts a
 
 class SchemaName f where
@@ -255,7 +249,7 @@ printValidate h aoptss = do
             hPutStrLn h $ "mkValidator(" ++ "schema_" ++ schemaSymbol ++ ").validate(jsondata." ++ dataSymbol ++ ")"
 
 printValidatorInPython :: FilePath -> IO ()
-printValidatorInPython path = do
+printValidatorInPython path =
     withFile path WriteMode $ \h -> do
         hPutStrLn h "# -*- coding: utf-8 -*-"
         hPutStrLn h "import codecs"
@@ -274,7 +268,11 @@ printValidatorInPython path = do
 
 pythonProcess :: FilePath -> CreateProcess
 pythonProcess dir = (proc "python" [dir ++ "/jsonvalidator.py"])
-    { std_in = CreatePipe, delegate_ctlc = True }
+    { std_in = CreatePipe
+#if MIN_VERSION_process(1,2,0)
+    , delegate_ctlc = True
+#endif
+    }
 
 runTest :: FilePath -> IO ()
 runTest dir = do
@@ -294,7 +292,7 @@ main :: IO ()
 main = do
     let dir = "tests"
     printValueAsJsonInPython (dir ++ "/jsondata.py")
-    printTypeAsSchemaInJson (dir)
+    printTypeAsSchemaInJson dir
     printValidatorInPython (dir ++ "/jsonvalidator.py")
     ec <- system "python --version"
     case ec of
