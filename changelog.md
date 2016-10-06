@@ -1,3 +1,9 @@
+0.4.0.0
+
+* Remove upper bound on depedencies.
+* Add support for `GHC 8.0.*`
+* Add support for `aeson-1.0.*`
+
 0.3.0.1
 
 * Allow `aeson-0.9.*`
