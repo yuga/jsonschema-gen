@@ -49,12 +49,20 @@ instance G.JSONSchemaGen MixType1
 --
 
 data TestDatum =
+#if MIN_VERSION_aeson(1,0,0)
+    forall a. (Generic a, A.GToJSON A.Zero (Rep a), SchemaName (Rep a))
+#else
     forall a. (Generic a, A.GToJSON (Rep a), SchemaName (Rep a))
+#endif
         => TestDatum { tdName :: String
                      , tdValue :: a
                      }
 
+#if MIN_VERSION_aeson(1,0,0)
+testDatum :: (Generic a, A.GToJSON A.Zero (Rep a), SchemaName (Rep a)) => String -> a -> TestDatum
+#else
 testDatum :: (Generic a, A.GToJSON (Rep a), SchemaName (Rep a)) => String -> a -> TestDatum
+#endif
 testDatum = TestDatum
 
 testData :: [TestDatum]
@@ -95,7 +103,11 @@ optPatterns =
     , A.TwoElemArray
     ]
 
+#if MIN_VERSION_aeson(1,0,0)
+encode :: (Generic a, A.GToJSON A.Zero (Rep a)) => A.Options -> a -> BL.ByteString
+#else
 encode :: (Generic a, A.GToJSON (Rep a)) => A.Options -> a -> BL.ByteString
+#endif
 encode opt a = A.encode (A.genericToJSON opt a)
 
 --
@@ -119,7 +131,11 @@ pairsOptSymbol opts name = go opts (1 :: Int)
     go []          _ = []
     go (opt:opts') n = (opt, name ++ "_" ++ show n) : go opts' (n + 1)
 
+#if MIN_VERSION_aeson(1,0,0)
+printValueAsJson :: (Generic a, A.GToJSON A.Zero (Rep a)) => Handle -> [A.Options] -> String -> a -> IO ()
+#else
 printValueAsJson :: (Generic a, A.GToJSON (Rep a)) => Handle -> [A.Options] -> String -> a -> IO ()
+#endif
 printValueAsJson h opts name value =
     forM_ (pairsOptSymbol opts name) . uncurry $ \opt symbol -> do
         hPutStrLn  h $ optToStr symbol opt

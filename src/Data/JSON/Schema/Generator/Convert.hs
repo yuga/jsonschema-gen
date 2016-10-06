@@ -222,6 +222,9 @@ conAsObject' :: A.Options -> SchemaChoice -> A.Value
 conAsObject' opts@(A.Options {A.sumEncoding = A.TaggedObject tFld cFld}) sc = conAsTag   opts (pack tFld) (pack cFld) sc
 conAsObject' opts@(A.Options {A.sumEncoding = A.TwoElemArray          }) sc = conAsArray opts sc
 conAsObject' opts@(A.Options {A.sumEncoding = A.ObjectWithSingleField }) sc = conAsMap   opts sc
+#if MIN_VERSION_aeson(1,0,0)
+conAsObject' _opts@(A.Options {A.sumEncoding = A.UntaggedValue })       _sc = error "Unsupported option"
+#endif
 
 conAsTag :: A.Options -> Text -> Text ->  SchemaChoice -> A.Value
 conAsTag opts tFld cFld (SCChoiceEnum  tag _)      = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts [])]
