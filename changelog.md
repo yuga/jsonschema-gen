@@ -1,3 +1,8 @@
+0.4.1.0
+
+* Add support for `GHC 8.2.*`
+* Add support for `aeson-1.2.*`
+
 0.4.0.0
 
 * Remove upper bound on depedencies.
