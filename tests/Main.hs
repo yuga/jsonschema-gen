@@ -115,10 +115,14 @@ encode opt a = A.encode (A.genericToJSON opt a)
 --
 
 optToStr :: String -> A.Options -> String
-optToStr symbol A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } =
+optToStr symbol aopts =
     "# " ++ symbol ++ " (allNullaryToStringTag: " ++ show a
                    ++ ", omitNothingFields: " ++ show b
                    ++ ", sumEncoding: " ++ showC c ++ ")"
+  where
+    a = A.allNullaryToStringTag aopts
+    b = A.omitNothingFields aopts
+    c = A.sumEncoding aopts
 
 showC :: A.SumEncoding -> String
 showC A.TwoElemArray = "array"
@@ -178,8 +182,12 @@ instance (Datatype d) => SchemaName (D1 d f) where
       where
         modName = moduleName (undefined :: D1 d f p)
         typName = datatypeName (undefined :: D1 d f p)
-    schemaSuffix opts A.Options { A.allNullaryToStringTag = a, A.omitNothingFields = b, A.sumEncoding = c } _ =
+    schemaSuffix opts aopts _ =
         show a ++ "." ++ show b ++ "." ++ showC c ++ G.schemaIdSuffix opts
+      where
+        a = A.allNullaryToStringTag aopts
+        b = A.omitNothingFields aopts
+        c = A.sumEncoding aopts
 
 schemaOptions :: G.Options
 schemaOptions = G.defaultOptions

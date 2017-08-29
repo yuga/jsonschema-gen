@@ -146,8 +146,8 @@ jsOneOf opts SCOneOf {scChoices = cs, scNullable = nullable} = choices opts null
 jsOneOf _ _ = []
 
 jsRequired :: A.Options -> Schema -> [(Text,A.Value)]
-jsRequired       A.Options {A.omitNothingFields = True}  SCObject {scRequired = r  } = [("required", array r)]
-jsRequired opts@(A.Options {A.omitNothingFields = _   }) SCObject {scProperties = p} = [("required", array . map fst $ toMap opts p)]
+jsRequired      (A.omitNothingFields -> True) SCObject {scRequired = r  } = [("required", array r)]
+jsRequired opts@(A.omitNothingFields -> _   ) SCObject {scProperties = p} = [("required", array . map fst $ toMap opts p)]
 jsRequired _ _ = []
 
 jsDefinitions :: A.Options -> Schema -> [(Text,A.Value)]
@@ -199,7 +199,7 @@ consAsEnum (SCChoiceEnum tag _) = tag
 consAsEnum s = error ("conAsEnum could not handle: " ++ show s)
 
 conAsObject :: A.Options -> SchemaChoice -> A.Value
-conAsObject opts@(A.Options {A.sumEncoding = A.TwoElemArray}) sc =
+conAsObject opts@(A.sumEncoding -> A.TwoElemArray) sc =
     object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
         `mappend`
@@ -219,12 +219,10 @@ conAsObject opts sc =
         ]
 
 conAsObject' :: A.Options -> SchemaChoice -> A.Value
-conAsObject' opts@(A.Options {A.sumEncoding = A.TaggedObject tFld cFld}) sc = conAsTag   opts (pack tFld) (pack cFld) sc
-conAsObject' opts@(A.Options {A.sumEncoding = A.TwoElemArray          }) sc = conAsArray opts sc
-conAsObject' opts@(A.Options {A.sumEncoding = A.ObjectWithSingleField }) sc = conAsMap   opts sc
-#if MIN_VERSION_aeson(1,0,0)
-conAsObject' _opts@(A.Options {A.sumEncoding = A.UntaggedValue })       _sc = error "Unsupported option"
-#endif
+conAsObject' opts@(A.sumEncoding -> A.TaggedObject tFld cFld) sc = conAsTag   opts (pack tFld) (pack cFld) sc
+conAsObject' opts@(A.sumEncoding -> A.TwoElemArray          ) sc = conAsArray opts sc
+conAsObject' opts@(A.sumEncoding -> A.ObjectWithSingleField ) sc = conAsMap   opts sc
+conAsObject' _opts {- @(A.sumEncoding -> A.UntaggedValue) -} _sc = error "Unsupported option"
 
 conAsTag :: A.Options -> Text -> Text ->  SchemaChoice -> A.Value
 conAsTag opts tFld cFld (SCChoiceEnum  tag _)      = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts [])]
@@ -258,8 +256,8 @@ conToObject opts mp rq = object
     , ("additionalProperties", false)
     ]
   where
-    required A.Options {A.omitNothingFields = True} = array rq
-    required A.Options {A.omitNothingFields = _   } = array . map fst $ toMap opts mp
+    required (A.omitNothingFields -> True) = array rq
+    required (A.omitNothingFields -> _   ) = array . map fst $ toMap opts mp
 
 toMap :: A.Options -> [(Text,Schema)] -> [(Text,A.Value)]
 toMap opts mp = map (\(n,v) -> (n,convert' False opts v)) mp
