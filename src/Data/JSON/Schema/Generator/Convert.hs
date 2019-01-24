@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module Data.JSON.Schema.Generator.Convert
     ( convert
@@ -8,17 +8,18 @@ module Data.JSON.Schema.Generator.Convert
 
 #if MIN_VERSION_base(4,8,0)
 #else
-import Control.Applicative ((<*>))
-import Data.Monoid (mappend)
+import           Control.Applicative              ((<*>))
+import           Data.Monoid                      (mappend)
 #endif
 
-import Data.JSON.Schema.Generator.Types (Schema(..), SchemaChoice(..))
-import Data.Text (Text, pack)
+import           Data.JSON.Schema.Generator.Types (Schema (..),
+                                                   SchemaChoice (..))
+import           Data.Text                        (Text, pack)
 
-import qualified Data.Aeson as A
-import qualified Data.Aeson.Types as A
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Vector as Vector
+import qualified Data.Aeson                       as A
+import qualified Data.Aeson.Types                 as A
+import qualified Data.HashMap.Strict              as HashMap
+import qualified Data.Vector                      as Vector
 
 --------------------------------------------------------------------------------
 
@@ -47,21 +48,22 @@ convertToList inArray opts s = foldr1 (++) $
     , jsOneOf                opts
     , jsRequired             opts
     , jsDefinitions          opts
+    , jsNull
     ] <*> [s]
 
 --------------------------------------------------------------------------------
 
 jsId :: Schema -> [(Text,A.Value)]
-jsId (SCSchema {scId = i}) = [("id", string i)]
-jsId _ = []
+jsId (SCSchema {scId = i}) = [("$id", string i)]
+jsId _                     = []
 
 jsSchema :: Schema -> [(Text,A.Value)]
 jsSchema SCSchema {scUsedSchema = s} = [("$schema", string s)]
-jsSchema _ = []
+jsSchema _                           = []
 
 jsSchemaType :: A.Options -> Schema -> [(Text,A.Value)]
 jsSchemaType opts SCSchema {scSchemaType = s} = convertToList False opts s
-jsSchemaType _ _ = []
+jsSchemaType _ _                              = []
 
 jsTitle :: Schema -> [(Text,A.Value)]
 jsTitle SCConst  {scTitle = "" } = []
@@ -72,7 +74,7 @@ jsTitle SCArray  {scTitle = "" } = []
 jsTitle SCArray  {scTitle = t  } = [("title", string t)]
 jsTitle SCOneOf  {scTitle = "" } = []
 jsTitle SCOneOf  {scTitle = t  } = [("title", string t)]
-jsTitle _ = []
+jsTitle _                        = []
 
 jsDescription :: Schema -> [(Text,A.Value)]
 jsDescription SCString  {scDescription = (Just d) } = [("description", string d)]
@@ -87,7 +89,7 @@ jsDescription _ = []
 
 jsReference :: Schema -> [(Text,A.Value)]
 jsReference SCRef {scReference = r} = [("$ref", string r)]
-jsReference _ = []
+jsReference _                       = []
 
 jsType :: Bool -> A.Options -> Schema -> [(Text,A.Value)]
 jsType (needsNull -> f) (f -> True) SCString  {scNullable = True } = [("type", array ["string", "null" :: Text])]
@@ -110,23 +112,23 @@ needsNull False opts = not (A.omitNothingFields opts)
 
 jsFormat :: Schema -> [(Text,A.Value)]
 jsFormat SCString {scFormat = Just f} = [("format", string f)]
-jsFormat _ = []
+jsFormat _                            = []
 
 jsLowerBound :: Schema -> [(Text,A.Value)]
 jsLowerBound SCString {scLowerBound = (Just n)} = [("minLength", number n)]
 jsLowerBound SCNumber {scLowerBound = (Just n)} = [("mininum",   number n)]
 jsLowerBound SCArray  {scLowerBound = (Just n)} = [("minItems",  number n)]
-jsLowerBound _ = []
+jsLowerBound _                                  = []
 
 jsUpperBound :: Schema -> [(Text,A.Value)]
 jsUpperBound SCString {scUpperBound = (Just n)} = [("maxLength", number n)]
 jsUpperBound SCNumber {scUpperBound = (Just n)} = [("maximum",   number n)]
 jsUpperBound SCArray  {scUpperBound = (Just n)} = [("maxItems",  number n)]
-jsUpperBound _ = []
+jsUpperBound _                                  = []
 
 jsValue :: Schema -> [(Text,A.Value)]
 jsValue SCConst {scValue = v} = [("enum", array [v])]
-jsValue _ = []
+jsValue _                     = []
 
 jsItems :: A.Options -> Schema -> [(Text,A.Value)]
 jsItems opts SCArray {scItems = items} = [("items", array . map (convert' True opts) $ items)]
@@ -154,6 +156,10 @@ jsDefinitions :: A.Options -> Schema -> [(Text,A.Value)]
 jsDefinitions _    SCSchema {scDefinitions = []} = []
 jsDefinitions opts SCSchema {scDefinitions = d } = [("definitions", object $ toMap opts d)]
 jsDefinitions _ _ = []
+
+jsNull :: Schema -> [(Text,A.Value)]
+jsNull SCNull = [("type", A.String "null")]
+jsNull _      = []
 
 --------------------------------------------------------------------------------
 
@@ -209,6 +215,8 @@ conAsObject opts@(A.sumEncoding -> A.TwoElemArray) sc =
         , ("maxItems", number 2)
         , ("additionalItems", false)
         ]
+conAsObject opts (SCChoiceSimple _ _ sc) =
+    convert opts sc
 conAsObject opts sc =
     object $
         if sctTitle sc == "" then [] else [ ("title", string $ sctTitle sc) ]
@@ -222,22 +230,32 @@ conAsObject' :: A.Options -> SchemaChoice -> A.Value
 conAsObject' opts@(A.sumEncoding -> A.TaggedObject tFld cFld) sc = conAsTag   opts (pack tFld) (pack cFld) sc
 conAsObject' opts@(A.sumEncoding -> A.TwoElemArray          ) sc = conAsArray opts sc
 conAsObject' opts@(A.sumEncoding -> A.ObjectWithSingleField ) sc = conAsMap   opts sc
-conAsObject' _opts {- @(A.sumEncoding -> A.UntaggedValue) -} _sc = error "Unsupported option"
+conAsObject' opts                                             sc = conAsList  opts sc
 
 conAsTag :: A.Options -> Text -> Text ->  SchemaChoice -> A.Value
-conAsTag opts tFld cFld (SCChoiceEnum  tag _)      = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts [])]
-conAsTag opts tFld cFld (SCChoiceArray tag _ ar)   = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts ar)]
-conAsTag opts tFld _    (SCChoiceMap   tag _ mp _) = object ((tFld, object [("enum", array [tag])]) : toMap opts mp)
+conAsTag opts tFld cFld (SCChoiceEnum   tag _)      = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts [])]
+conAsTag opts tFld cFld (SCChoiceArray  tag _ ar)   = object [(tFld, object [("enum", array [tag])]), (cFld, conToArray opts ar)]
+conAsTag opts tFld _    (SCChoiceMap    tag _ mp _) = object ((tFld, object [("enum", array [tag])]) : toMap opts mp)
+conAsTag opts tFld _    (SCChoiceSimple _ _ sc)     = object [(tFld, convert opts sc)]
 
 conAsArray :: A.Options -> SchemaChoice -> A.Value
-conAsArray opts (SCChoiceEnum  tag _)       = array [object [("enum", array [tag])], conToArray  opts []]
-conAsArray opts (SCChoiceArray tag _ ar)    = array [object [("enum", array [tag])], conToArray  opts ar]
-conAsArray opts (SCChoiceMap   tag _ mp rq) = array [object [("enum", array [tag])], conToObject opts mp rq]
+conAsArray opts (SCChoiceEnum   tag _)       = array [object [("enum", array [tag])], conToArray  opts []]
+conAsArray opts (SCChoiceArray  tag _ ar)    = array [object [("enum", array [tag])], conToArray  opts ar]
+conAsArray opts (SCChoiceMap    tag _ mp rq) = array [object [("enum", array [tag])], conToObject opts mp rq]
+conAsArray opts (SCChoiceSimple tag _ sc)    = array [object [("enum", array [tag])], convert opts sc]
 
 conAsMap :: A.Options -> SchemaChoice -> A.Value
-conAsMap opts (SCChoiceEnum  tag _)       = object [(tag, conToArray  opts [])]
-conAsMap opts (SCChoiceArray tag _ ar)    = object [(tag, conToArray  opts ar)]
-conAsMap opts (SCChoiceMap   tag _ mp rq) = object [(tag, conToObject opts mp rq)]
+conAsMap opts (SCChoiceEnum   tag _)       = object [(tag, conToArray  opts [])]
+conAsMap opts (SCChoiceArray  tag _ ar)    = object [(tag, conToArray  opts ar)]
+conAsMap opts (SCChoiceMap    tag _ mp rq) = object [(tag, conToObject opts mp rq)]
+conAsMap opts (SCChoiceSimple tag _ sc)    = object [(tag, convert opts sc)]
+
+conAsList :: A.Options -> SchemaChoice -> A.Value
+conAsList opts (SCChoiceArray  _ _ ar)   = array $ convert opts <$> ar
+conAsList opts (SCChoiceMap    _ _ mp _) = object $ (\(t, sc) -> (t, convert opts sc)) <$> mp
+conAsList opts (SCChoiceSimple _ _ sc)   = convert opts sc
+conAsList _ _                            = error "unsupported option"
+
 
 conToArray :: A.Options -> [Schema] -> A.Value
 conToArray opts ar = object

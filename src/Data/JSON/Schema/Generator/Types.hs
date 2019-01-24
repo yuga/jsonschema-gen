@@ -7,7 +7,7 @@ module Data.JSON.Schema.Generator.Types
     , scBoolean
     ) where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 
 --------------------------------------------------------------------------------
 
@@ -15,38 +15,38 @@ import Data.Text (Text)
 --
 data Schema =
       SCSchema
-        { scId           :: !Text
-        , scUsedSchema   :: !Text
-        , scSchemaType   :: !Schema
-        , scDefinitions  :: ![(Text, Schema)]
+        { scId          :: !Text
+        , scUsedSchema  :: !Text
+        , scSchemaType  :: !Schema
+        , scDefinitions :: ![(Text, Schema)]
         }
     | SCString
-        { scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
-        , scFormat       :: !(Maybe Text)
-        , scLowerBound   :: !(Maybe Integer)
-        , scUpperBound   :: !(Maybe Integer)
+        { scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
+        , scFormat      :: !(Maybe Text)
+        , scLowerBound  :: !(Maybe Integer)
+        , scUpperBound  :: !(Maybe Integer)
         }
     | SCInteger
-        { scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
-        , scLowerBound   :: !(Maybe Integer)
-        , scUpperBound   :: !(Maybe Integer)
+        { scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
+        , scLowerBound  :: !(Maybe Integer)
+        , scUpperBound  :: !(Maybe Integer)
         }
     | SCNumber
-        { scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
-        , scLowerBound   :: !(Maybe Integer)
-        , scUpperBound   :: !(Maybe Integer)
+        { scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
+        , scLowerBound  :: !(Maybe Integer)
+        , scUpperBound  :: !(Maybe Integer)
         }
     | SCBoolean
-        { scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
+        { scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
         }
     | SCConst
-        { scTitle        :: !Text
-        , scDescription  :: !(Maybe Text)
-        , scValue        :: !Text
+        { scTitle       :: !Text
+        , scDescription :: !(Maybe Text)
+        , scValue       :: !Text
         }
     | SCObject
         { scTitle        :: !Text
@@ -57,22 +57,22 @@ data Schema =
         , scRequired     :: ![Text]
         }
     | SCArray
-        { scTitle        :: !Text
-        , scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
-        , scItems        :: ![Schema]
-        , scLowerBound   :: !(Maybe Integer)
-        , scUpperBound   :: !(Maybe Integer)
+        { scTitle       :: !Text
+        , scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
+        , scItems       :: ![Schema]
+        , scLowerBound  :: !(Maybe Integer)
+        , scUpperBound  :: !(Maybe Integer)
         }
     | SCOneOf
-        { scTitle        :: !Text
-        , scDescription  :: !(Maybe Text)
-        , scNullable     :: !Bool
-        , scChoices      :: ![SchemaChoice]
+        { scTitle       :: !Text
+        , scDescription :: !(Maybe Text)
+        , scNullable    :: !Bool
+        , scChoices     :: ![SchemaChoice]
         }
     | SCRef
-        { scReference    :: !Text
-        , scNullable     :: !Bool
+        { scReference :: !Text
+        , scNullable  :: !Bool
         }
     | SCNull
     deriving (Show)
@@ -81,15 +81,15 @@ data Schema =
 --
 data SchemaChoice =
       SCChoiceEnum
-        { sctName     :: !Text             --   constructor name.
-        , sctTitle    :: !Text             --   an arbitrary text. e.g. Types.UnitType1.UnitData11.
+        { sctName  :: !Text             --   constructor name.
+        , sctTitle :: !Text             --   an arbitrary text. e.g. Types.UnitType1.UnitData11.
         }
       -- ^ Encoding for constructors that are all unit type.
       -- e.g. "test": {"enum": ["xxx", "yyy", "zzz"]}
     | SCChoiceArray
-        { sctName     :: !Text             --   constructor name.
-        , sctTitle    :: !Text             --   an arbitrary text. e.g. Types.ProductType1.ProductData11.
-        , sctArray    :: ![Schema]         --   parametes of constructor.
+        { sctName  :: !Text             --   constructor name.
+        , sctTitle :: !Text             --   an arbitrary text. e.g. Types.ProductType1.ProductData11.
+        , sctArray :: ![Schema]         --   parametes of constructor.
         }
       -- ^ Encoding for constructors that are non record type.
       -- e.g. "test": [{"tag": "xxx", "contents": []},...] or "test": [{"xxx": [],},...]
@@ -101,6 +101,12 @@ data SchemaChoice =
         }
       -- ^ Encoding for constructos that are record type.
       -- e.g. "test": [{"tag": "xxx", "contents": {"aaa": "yyy",...}},...] or "test": [{"xxx": []},...]
+    | SCChoiceSimple
+        { sctName   :: !Text             --   constructor name
+        , sctTitle  :: !Text             --   an arbitrary text. e.g. Types.RecordType1.RecordData11.
+        , sctSchema :: !Schema           --   schema of the choice
+        }
+      -- ^ Encoding for simple schema options.
     deriving (Show)
 
 -- ^ A smart consturctor for String.
